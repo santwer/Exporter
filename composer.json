@@ -1,0 +1,22 @@
+{
+    "name": "santwer/exporter",
+    "description": "Laravel Package to Export with tokens into word templates",
+    "type": "library",
+    "require": {
+        "laravel/framework": "^8.75",
+        "php": "^7.4|^8.0",
+        "phpoffice/phpword": "^v0.18"
+    },
+    "autoload": {
+        "psr-4": {
+            "Santwer\\Exporter\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Sven Antwertwetiner",
+            "email": "sven.antwertinger@tricept.de"
+        }
+    ],
+    "minimum-stability": "dev"
+}
