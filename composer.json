@@ -2,6 +2,7 @@
     "name": "santwer/exporter",
     "description": "Laravel Package to Export with tokens into word templates",
     "type": "library",
+    "license": "MIT",
     "require": {
         "laravel/framework": "^8.75",
         "php": "^7.4|^8.0",
