@@ -37,7 +37,7 @@ class GlobalVariables
 
     public static function config($value, $default)
     {
-        return self::config(self::$configPrefix.'.'.$value, $default);
+        return config(self::$configPrefix.'.'.$value, $default);
     }
 
 }
