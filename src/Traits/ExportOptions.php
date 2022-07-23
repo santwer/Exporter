@@ -20,6 +20,8 @@ trait ExportOptions
 
     protected $process;
 
+    protected $format;
+
     private static $formats = ['docx', 'html', 'pdf'];
 
     /**
@@ -82,6 +84,9 @@ trait ExportOptions
         if (isset($options['processor'])) {
             $this->setProcessor($options['processor']);
         }
+        if (isset($options['format'])) {
+            $this->format = $options['format'];
+        }
 
     }
 
@@ -111,7 +116,6 @@ trait ExportOptions
     /**
      * @param  Collection  $collection
      * @param  string|null  $name
-     * @param  array  $options
      * @return ?\Symfony\Component\HttpFoundation\BinaryFileResponse
      * @throws NoFileException
      */
@@ -138,8 +142,8 @@ trait ExportOptions
                         now()->format('Y-m-d H i s'),
                     ]).'.'.$extTmp;
         }
-        if (isset($options['format']) && in_array($options['format'], self::$formats)) {
-            $endfile = $exporter->getProcessedConvertedFile($options['format']);
+        if ($this->format && in_array($this->format, self::$formats)) {
+            $endfile = $exporter->getProcessedConvertedFile($this->format);
         } else {
             $endfile = $exporter->getProcessedFile();
         }
@@ -153,7 +157,7 @@ trait ExportOptions
 
             return null;
         }
-        if (isset($options['format']) && in_array($options['format'], self::$formats)) {
+        if (isset($this->format) && in_array($this->format, self::$formats)) {
             return response()
                 ->download($endfile, $name);
         }
