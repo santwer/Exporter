@@ -26,7 +26,9 @@ trait Exportable
         } else {
             $attributes = $this->attributesToArray();
         }
+
         foreach ($this->getRelations() as $key => $relation) {
+
             if ($relation instanceof Collection) {
                 if (($first = $relation->first()) === null) {
                     $attributes[$key] = [];
@@ -46,13 +48,14 @@ trait Exportable
                         = $mattr;
                 }
             } else {
+
                 if (!ModelProcessor::checkForExportable($relation)) {
                     $attributes[$key] = null;
                     continue;
                 }
 
                 foreach ($relation->getExportAttributes() as $attr => $val) {
-                    $attributes[$model->getExportBlockValue().'.'.$attr]
+                    $attributes[$relation->getExportBlockValue().'.'.$attr]
                         = $val;
                 }
             }
@@ -63,7 +66,7 @@ trait Exportable
 
     public function getExportBlockValue()
     {
-        if (isset($this->exportBlock)) {
+        if (isset($this->exportBlock) && !empty($this->exportBlock)) {
             return $this->exportBlock;
         }
 

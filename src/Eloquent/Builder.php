@@ -15,12 +15,14 @@ class Builder extends EloquentBuilder
     protected static $exportdata;
 
     /**
-     * @param  array  $options
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     * @param  string|null  $name
+     * @param  array        $options
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|null
      * @throws NoFileException
      */
     public function export(?string $name = null, array $options = [])
     {
+        $this->beginnProcess($options);
         if($this::$exportdata === null && !empty($this->getModel()->getAttributes())) {
             $data = collect([$this->getModel()]) ?? $this->get();
         } else {
@@ -28,16 +30,17 @@ class Builder extends EloquentBuilder
         }
 
         return $this->exportDataCollection(
-            $data, $name, $options
+            $data, $name
         );
     }
 
     public function exportFirst(?string $name = null, $columns = ['*'], array $options = [])
     {
+        $this->beginnProcess($options);
         $data = collect([$this->first($columns)]);
 
         return $this->exportDataCollection(
-            $data, $name, $options
+            $data, $name
         );
     }
 
@@ -71,6 +74,7 @@ class Builder extends EloquentBuilder
 
     public function storeAs(string $filePath, string $name, $options = [])
     {
+        $this->beginnProcess($options);
         if($this::$exportdata === null && !empty($this->getModel()->getAttributes())) {
             $data = collect([$this->getModel()]) ?? $this->get();
         } else {
@@ -78,7 +82,7 @@ class Builder extends EloquentBuilder
         }
 
         return $this->exportDataCollection(
-            $data, $name, $options, $filePath
+            $data, $name, $filePath
         );
     }
 

@@ -2,7 +2,7 @@
 
 namespace Santwer\Exporter\Processor;
 
-class FailedExporter
+class PDFExporter
 {
     protected static $baseCommenad = 'soffice';
     protected static $outPutFile = '';

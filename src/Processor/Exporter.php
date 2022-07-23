@@ -3,8 +3,9 @@
 namespace Santwer\Exporter\Processor;
 
 use Illuminate\Support\Str;
+use Santwer\Exporter\Eloquent\Builder;
 
-class Exporter
+class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 {
     protected $wordfile;
 
@@ -12,10 +13,22 @@ class Exporter
 
     protected $blocks = [];
 
+    protected $templateProcessor;
+
+    /**
+     * @var Builder $builder
+     */
+    protected $builder;
+
 
     public function __construct(string $wordfile)
     {
         $this->wordfile = $wordfile;
+    }
+
+    public function getTemplateVariables()
+    {
+       return $this->getTemplateProcessor()->getVariables();
     }
 
     /**
@@ -47,6 +60,7 @@ class Exporter
         $this->values[$name] = $value;
     }
 
+
     /**
      * @param  string|null  $savepath
      * @return array|false|string|string[]
@@ -74,18 +88,27 @@ class Exporter
         $templateProcessor = $this->process();
         $savepath = $savepath ?? $this->getTempFileName('docx');
         $templateProcessor->saveAs($savepath);
-        if($format === 'pdf') {
-            return FailedExporter::docxToPdf($savepath,
+        if ($format === 'pdf') {
+            return PDFExporter::docxToPdf($savepath,
                 $savepath ? pathinfo($savepath,
                     PATHINFO_DIRNAME) : null);
         }
-        if($format === 'pdf') {
-            return FailedExporter::html2Pdf($savepath,
-            $savepath ? pathinfo($savepath,
-                PATHINFO_DIRNAME) : null);
+        if ($format === 'pdf') {
+            return PDFExporter::html2Pdf($savepath,
+                $savepath ? pathinfo($savepath,
+                    PATHINFO_DIRNAME) : null);
         }
 
         return $savepath;
+    }
+
+    private function getTemplateProcessor(): TemplateProcessor
+    {
+        if (null === $this->templateProcessor) {
+            $this->templateProcessor = new TemplateProcessor($this->wordfile);
+        }
+
+        return $this->templateProcessor;
     }
 
     /**
@@ -93,9 +116,9 @@ class Exporter
      * @throws \PhpOffice\PhpWord\Exception\CopyFileException
      * @throws \PhpOffice\PhpWord\Exception\CreateTemporaryFileException
      */
-    protected function process(): TemplateProcessor
+    public function process(): TemplateProcessor
     {
-        $templateProcessor = new TemplateProcessor($this->wordfile);
+        $templateProcessor = $this->getTemplateProcessor();
         $values = collect($this->values);
 
         $setValues = $values->filter(fn ($x) => !is_array($x));
@@ -105,6 +128,10 @@ class Exporter
 
         if (!empty($setValues)) {
             $templateProcessor->setValues($setValues);
+        }
+
+        if ($this->builder) {
+            $this->builder->checkForRelations($templateProcessor->getVariables());
         }
 
         if (!empty($this->blocks)) {
@@ -130,7 +157,7 @@ class Exporter
      * @param  bool         $withoutPath
      * @return array|false|string|string[]
      */
-    private function getTempFileName(string $ext = null, bool $withoutPath = false)
+    public function getTempFileName(string $ext = null, bool $withoutPath = false)
     {
         if ($withoutPath) {
             $temp = tempnam('', 'Exp');

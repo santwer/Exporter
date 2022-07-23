@@ -78,12 +78,6 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
                     }
                     $clonedBlockVaribles = $variableReplacementsRecrusive[$index];
                     foreach ($clonedBlockVaribles as $block => $variableReplacementsR) {
-//                        dd($block, $variableReplacementsR, $clone, $replace, $this->cloneRecrusiveBlock($block,
-//                            $clones,
-//                            $replace,
-//                            $indexVariables,
-//                            $variableReplacementsR,
-//                            $clone), $clone);
                         $this->cloneRecrusiveBlock($block,
                             $clones,
                             $replace,
