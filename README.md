@@ -1,6 +1,12 @@
 # Word Template Exporter #
 Package for easy Word export in Laravel on given Templates.
 
+<p align="center">
+<a href="https://github.com/santwer/exporter"><img src="https://img.shields.io/github/commit-activity/m/santwer/exporter" alt="Commit Activity"></a>
+<a href="https://packagist.org/packages/santwer/exporter"><img src="https://img.shields.io/packagist/dt/santwer/exporter" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/santwer/exporter"><img src="https://img.shields.io/packagist/v/santwer/exporter" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/santwer/exporter"><img src="https://img.shields.io/packagist/l/santwer/exporter" alt="License"></a>
+</p>
 ## Installation
 
 Exporter is installed via [Composer](https://getcomposer.org/).
@@ -275,3 +281,28 @@ class User implements HasTemplate {
 ```
 
 For each Relation it will add up its relation block name.
+
+
+### Relation Variable with Condition
+
+It is possible to define Variables which are Related to many Entries. Therefore you can 
+reduce it to one relation and get a certain Value in the relation.
+
+It will only select one entry.
+
+```word
+{customer}
+    {name}, {email}
+    Order 15: {orders:15.product_id} {orders:15.order_date}
+{/customer}
+```
+
+However you can set up one where condition to get the entry. 
+```word
+{customer}
+    {name}, {email}
+    Order 15: {orders:product_id,=,4.product_id} {orders:product_id,=,4.order_date}
+{/customer}
+```
+
+If the Entry is not found the Values of the Model will be null.

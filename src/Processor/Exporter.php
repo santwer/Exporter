@@ -135,6 +135,7 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
         }
 
         if (!empty($this->blocks)) {
+
             foreach ($this->blocks as $block => $replacement) {
                 $replacements = collect($replacement)
                     ->map(function ($y) {

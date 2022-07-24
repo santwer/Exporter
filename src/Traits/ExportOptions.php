@@ -9,6 +9,7 @@ use Santwer\Exporter\Exceptions\NoFileException;
 use Santwer\Exporter\Processor\Exporter;
 use Santwer\Exporter\Processor\GlobalVariables;
 use Santwer\Exporter\Processor\ModelProcessor;
+use Santwer\Exporter\Processor\VariablesConditionProcessor;
 
 trait ExportOptions
 {
@@ -18,6 +19,9 @@ trait ExportOptions
 
     protected $relationsFromTemplate = null;
 
+    /**
+     * @var Exporter $process
+     */
     protected $process;
 
     protected $format;
@@ -102,13 +106,12 @@ trait ExportOptions
             throw new NoFileException($this->template);
         }
 
-        /**
-         * @var Exporter $exporter
-         */
         $this->process = new $this->processor($this->template);
         if($this->relationsFromTemplate || $this->relationsFromTemplate === null && GlobalVariables::config('relationsFromTemplate', true)) {
             if (is_array($array = $this->process->getTemplateVariables())) {
-                $this->checkForRelations($array);
+                $this->checkForRelations(
+                    VariablesConditionProcessor::getReducedForRelations($array)
+                );
             }
         }
     }
@@ -128,9 +131,11 @@ trait ExportOptions
         if(null === $exporter) {
             throw new \Exception('Error Process not started.');
         }
+
+        $vars = VariablesConditionProcessor::getRelatedConditions( $exporter->getTemplateVariables());
         $exporter->setBlockValues(
             $this->model->getExportBlockValue(),
-            $collection->map(fn ($model) => $model->getExportAttributes())->toArray()
+            $collection->map(fn ($model) => $model->getExportAttributes($vars))->toArray()
         );
 
         $extTmp = pathinfo($this->template, PATHINFO_EXTENSION);

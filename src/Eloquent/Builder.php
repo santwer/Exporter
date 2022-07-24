@@ -15,13 +15,17 @@ class Builder extends EloquentBuilder
     protected static $exportdata;
 
     /**
-     * @param  string|null  $name
+     * @param  array|string|null  $name
      * @param  array        $options
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|null
      * @throws NoFileException
      */
-    public function export(?string $name = null, array $options = [])
+    public function export(mixed $name = null, array $options = [])
     {
+        if(is_array($name)) {
+            $options = array_merge($name, $options);
+            $name = isset($options['name']) ? $options['name'] : null;
+        }
         $this->beginnProcess($options);
         if($this::$exportdata === null && !empty($this->getModel()->getAttributes())) {
             $data = collect([$this->getModel()]) ?? $this->get();
@@ -34,8 +38,19 @@ class Builder extends EloquentBuilder
         );
     }
 
-    public function exportFirst(?string $name = null, $columns = ['*'], array $options = [])
+    /**
+     * @param  array|string|null  $name
+     * @param               $columns
+     * @param  array        $options
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|null
+     * @throws NoFileException
+     */
+    public function exportFirst(mixed $name = null, $columns = ['*'], array $options = [])
     {
+        if(is_array($name)) {
+            $options = array_merge($name, $options);
+            $name = isset($options['name']) ? $options['name'] : null;
+        }
         $this->beginnProcess($options);
         $data = collect([$this->first($columns)]);
 
