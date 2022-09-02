@@ -1,12 +1,13 @@
 # Word Template Exporter #
-Package for easy Word export in Laravel on given Templates.
+Package for easy Word exports in Laravel on given Templates.
 
-<p align="center">
+<p style="text-align: center;">
 <a href="https://github.com/santwer/exporter"><img src="https://img.shields.io/github/commit-activity/m/santwer/exporter" alt="Commit Activity"></a>
 <a href="https://packagist.org/packages/santwer/exporter"><img src="https://img.shields.io/packagist/dt/santwer/exporter" alt="Total Downloads"></a>
 <a href="https://packagist.org/packages/santwer/exporter"><img src="https://img.shields.io/packagist/v/santwer/exporter" alt="Latest Stable Version"></a>
 <a href="https://packagist.org/packages/santwer/exporter"><img src="https://img.shields.io/packagist/l/santwer/exporter" alt="License"></a>
 </p>
+
 ## Installation
 
 Exporter is installed via [Composer](https://getcomposer.org/).
@@ -77,7 +78,7 @@ class User implements HasTemplate {
 }
 ```
 
-You can also define own Blocknames for the use of the Model in an template. 
+You can also define own Blocknames for the use of the Model in a template. 
 ```php
 use Santwer\Exporter\Exportable;
 ...
@@ -116,7 +117,7 @@ return User::where(...)
         ->template('templatefile.docx')
         ->storeAs('storage/path', 'name.docx');
 ```
-Also possible To set Export after Executing the query or on a Model after Find 
+It's also possible to set Export-Command after Executing the query or on a Model after Find-Command
 ```php
 return User::where(...)
         ->first()
@@ -128,14 +129,14 @@ return User::find(1234)
 ```
 
 ## Export as PDF
-Gernally with the option format = pdf it is possible to export pdf. 
+Generally with the option format = pdf it is possible to export pdf. 
 It is important that libreOffice is installed for that actions.
 ```php
 return User::where(...)
         ->template('templatefile.docx')
         ->export(['format' => 'pdf']);
 ```
-For short terms it is Possible to call Export functions as PDF
+For short terms it is possible to call Export functions as PDF
 ```php
 return User::where(...)
         ->exportPdf();
@@ -148,9 +149,9 @@ return User::where(...)
 
 ## Autoloading Relations
 
-Before exporting the Package is checking for defined Relations, 
-if there is no related Variable it will automatically remove unneeded relations. 
-This behavior can be changed within the config. For that it is needed to set up an config File exporter.php in config/
+Before exporting, the Package is checking for defined Relations.
+If there is no related Variable it will automatically remove unneeded relations. 
+This behavior can be changed within the config. For that it is needed to set up a config File exporter.php in config/
 
 ```php
 return [
@@ -159,7 +160,7 @@ return [
 ```
 
 Also is the Package checking for relations that are not loaded yet. It will automatically load the Relations before exporting.
-Therefore it is possible to reduce the Exportcode from 
+Therefore, it is possible to reduce the Export-Code from 
 ```php
 return User::with('posts')
         ->with('posts.comments')
@@ -173,9 +174,9 @@ return User::template('templatefile.docx')->export();
 ```
 If the Relation is already loaded it will not be affected. 
 
-## Varibales
+## Variables
 
-It is Possible to set up variables which are not affected by the Model or Query.
+It is possible to set up variables which are not affected by the Model or Query.
 ```php
 use Santwer\Exporter\Processor\GlobalVariables;
 ...
@@ -195,7 +196,7 @@ use Santwer\Exporter\Processor\GlobalVariables;
 ## Template
 
 The Template should be DOCX or DOC. The File will be cloned and saved in the sys_temp_folder as long it has no store option. 
-For PDF exports it is needed to use LibreOffice. Therefore the soffice command needs to be executable.
+For PDF exports it is needed to use LibreOffice. Therefore, the soffice command needs to be executable.
 
 For the Templateprocessing it uses [phpoffice/phpword](https://github.com/PHPOffice/PHPWord)
 More Infos you can find [here](https://phpword.readthedocs.io/en/latest/templates-processing.html)
@@ -233,7 +234,7 @@ class User implements HasTemplate {
     ...
     protected $exportBlock = 'customer';
     
-    public function deleveryAddress()
+    public function deliveryAddress()
     {
         return $this->hasOne(Address::class);
     }
@@ -243,7 +244,7 @@ class User implements HasTemplate {
 ```word
 {customer}
     {name}, {email}
-    {deleveryAddress.street}, {deleveryAddress.city} {deleveryAddress.postcode} 
+    {deliveryAddress.street}, {deliveryAddress.city} {deliveryAddress.postcode} 
 {/customer}
 ```
 
@@ -263,7 +264,7 @@ class User implements HasTemplate {
         return $this->hasOne(Order::class);
     }
     
-    public function deleveryAddress()
+    public function deliveryAddress()
     {
         return $this->hasOne(Address::class);
     }
@@ -275,7 +276,7 @@ class User implements HasTemplate {
     {name}, {email}
     {orders}
         {orders.product_id} {orders.order_date}
-        {deleveryAddress.street}, {deleveryAddress.city} {deleveryAddress.postcode} 
+        {deliveryAddress.street}, {deliveryAddress.city} {deliveryAddress.postcode} 
     {/orders}
 {/customer}
 ```
@@ -285,7 +286,7 @@ For each Relation it will add up its relation block name.
 
 ### Relation Variable with Condition
 
-It is possible to define Variables which are Related to many Entries. Therefore you can 
+It is possible to define Variables which are Related to many Entries. Therefore, you can 
 reduce it to one relation and get a certain Value in the relation.
 
 It will only select one entry.
@@ -297,7 +298,7 @@ It will only select one entry.
 {/customer}
 ```
 
-However you can set up one where condition to get the entry. 
+However, you can set up one where condition to get the entry. 
 ```word
 {customer}
     {name}, {email}
