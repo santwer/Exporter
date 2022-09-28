@@ -50,12 +50,12 @@ trait Exportable
                     $mattr = [];
                     foreach ($model->getExportAttributes() as $attr => $val) {
                         $attrs[] = $attr;
-                        $mattr[$model->getExportBlockValue().'.'.$attr] = $val;
+                        $mattr[$model->getExportBlockValue($key).'.'.$attr] = $val;
                     }
-                    $attributes[$model->getExportBlockValue()][]
+                    $attributes[$model->getExportBlockValue($key)][]
                         = $mattr;
                     if ($blockName == null) {
-                        $blockName = $model->getExportBlockValue();
+                        $blockName = $model->getExportBlockValue($key);
                     }
                     if ($primary == null) {
                         $primary = $model->getKeyName();
@@ -88,7 +88,7 @@ trait Exportable
                 }
 
                 foreach ($relation->getExportAttributes() as $attr => $val) {
-                    $attributes[$relation->getExportBlockValue().'.'.$attr]
+                    $attributes[$relation->getExportBlockValue($key).'.'.$attr]
                         = $val;
                 }
             }
@@ -97,12 +97,15 @@ trait Exportable
         return $attributes;
     }
 
-    public function getExportBlockValue()
+    public function getExportBlockValue(string $key = null)
     {
         if (isset($this->exportBlock) && !empty($this->exportBlock)) {
             return $this->exportBlock;
         }
+        if ($key === null) {
+            return $this->getTable();
+        }
 
-        return $this->getTable();
+        return $key;
     }
 }

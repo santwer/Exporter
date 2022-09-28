@@ -162,28 +162,29 @@ trait ExportOptions
 
             return null;
         }
+
         if (isset($this->format) && in_array($this->format, self::$formats)) {
             return response()
                 ->download($endfile, $name);
         }
 
         return response()
-            ->download($endfile, $name);
+            ->download($endfile, $name, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']);
     }
 
     public function checkForRelations(array $relations)
     {
-       $deleteRelations = GlobalVariables::config('removeRelations', true);
-       if($deleteRelations) {
-           $eagerLoads = $this->getEagerLoads();
+        $deleteRelations = GlobalVariables::config('removeRelations', true);
+        if($deleteRelations) {
+            $eagerLoads = $this->getEagerLoads();
 
-           foreach ($eagerLoads as $relation => $closure) {
-               if (!in_array($relation, $relations)) {
-                   unset($eagerLoads[$relation]);
-               }
-           }
-           $this->setEagerLoads($eagerLoads);
-       }
+            foreach ($eagerLoads as $relation => $closure) {
+                if (!in_array($relation, $relations)) {
+                    unset($eagerLoads[$relation]);
+                }
+            }
+            $this->setEagerLoads($eagerLoads);
+        }
         $this->autoloadRelations($relations, $this->getModel());
 
     }

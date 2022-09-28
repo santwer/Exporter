@@ -29,7 +29,11 @@ class Builder extends EloquentBuilder
         $this->beginnProcess($options);
         if($this::$exportdata === null && !empty($this->getModel()->getAttributes())) {
             $data = collect([$this->getModel()]) ?? $this->get();
-        } else {
+        } elseif(isset($options['with'])) {
+            $data = $this->with($options['with'])->get();
+        }
+        else {
+
             $data = $this::$exportdata ? collect([$this::$exportdata]) : $this->get();
         }
 
