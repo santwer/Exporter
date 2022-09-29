@@ -20,7 +20,7 @@ class Builder extends EloquentBuilder
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|null
      * @throws NoFileException
      */
-    public function export(mixed $name = null, array $options = [])
+    public function export($name = null, array $options = [])
     {
         if(is_array($name)) {
             $options = array_merge($name, $options);
@@ -49,7 +49,7 @@ class Builder extends EloquentBuilder
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|null
      * @throws NoFileException
      */
-    public function exportFirst(mixed $name = null, $columns = ['*'], array $options = [])
+    public function exportFirst($name = null, $columns = ['*'], array $options = [])
     {
         if(is_array($name)) {
             $options = array_merge($name, $options);
