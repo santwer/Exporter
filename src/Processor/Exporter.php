@@ -133,7 +133,7 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
         if ($this->builder) {
             $this->builder->checkForRelations($templateProcessor->getVariables());
         }
-
+        $this->blocks = $this->addEmptyValues($this->blocks);
         if (!empty($this->blocks)) {
 
             foreach ($this->blocks as $block => $replacement) {
@@ -151,6 +151,28 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
         }
 
         return $templateProcessor;
+    }
+
+    private function addEmptyValues($blocks)
+    {
+        $variables = $this->getTemplateVariables();
+        foreach ($variables as $variable) {
+            if(in_array('/'.$variable, $variables) || Str::contains(':', $variable)) {
+                continue;
+            }
+            foreach($blocks as $b => $block) {
+                foreach($block as $e => $entry) {
+                    foreach($variables as $variable) {
+                        if(isset($entry[$variable])) {
+                            continue;
+                        }
+                        $blocks[$b][$e][$variable] = null;
+                    }
+                }
+            }
+
+        }
+        return $blocks;
     }
 
     /**
