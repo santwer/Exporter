@@ -107,7 +107,7 @@ trait ExportOptions
         }
 
         $this->process = new $this->processor($this->template);
-        if($this->relationsFromTemplate || $this->relationsFromTemplate === null && GlobalVariables::config('relationsFromTemplate', true)) {
+        if($this->relationsFromTemplate || $this->relationsFromTemplate === null && GlobalVariables::config('relationsFromTemplate', false)) {
             if (is_array($array = $this->process->getTemplateVariables())) {
                 $this->checkForRelations(
                     VariablesConditionProcessor::getReducedForRelations($array)
