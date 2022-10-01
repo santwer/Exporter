@@ -26,6 +26,8 @@ trait ExportOptions
 
     protected $format;
 
+    protected $debug = false;
+
     private static $formats = ['docx', 'html', 'pdf'];
 
     /**
@@ -91,6 +93,9 @@ trait ExportOptions
         if (isset($options['format'])) {
             $this->format = $options['format'];
         }
+        if(isset($options['debug']) && is_bool($options['debug'])) {
+            $this->debug = (bool)$options['debug'];
+        }
 
     }
 
@@ -137,6 +142,9 @@ trait ExportOptions
             $this->model->getExportBlockValue(),
             $collection->map(fn ($model) => $model->getExportAttributes($vars))->toArray()
         );
+        if($this->debug) {
+            dd(collect([$this->model->getExportBlockValue() => $collection->map(fn ($model) => $model->getExportAttributes($vars))->toArray()]));
+        }
 
         $extTmp = pathinfo($this->template, PATHINFO_EXTENSION);
 

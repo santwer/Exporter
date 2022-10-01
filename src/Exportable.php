@@ -9,6 +9,7 @@ use Santwer\Exporter\Processor\ModelProcessor;
 
 /**
  * @method static export(?string $name, array $options = [])
+ * @method static ddExport(?string $name, array $options = [])
  * @method static exportFirst(?string $name = null, $columns = ['*'], array $options = [])
  * @method static exportPdf(?string $name, array $options = [])
  * @method static exportFirstPdf(?string $name = null, $columns = ['*'], array $options = [])

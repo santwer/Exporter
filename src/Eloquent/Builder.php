@@ -2,6 +2,7 @@
 
 namespace Santwer\Exporter\Eloquent;
 
+use Santwer\Exporter\Traits\ExportDebug;
 use \Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Str;
 use Santwer\Exporter\Exceptions\NoFileException;
@@ -10,7 +11,7 @@ use Santwer\Exporter\Traits\ExportOptions;
 
 class Builder extends EloquentBuilder
 {
-    use ExportOptions, BuilderExportPdf;
+    use ExportOptions, BuilderExportPdf, ExportDebug;
 
     protected static $exportdata;
 
