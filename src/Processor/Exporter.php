@@ -157,20 +157,20 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
     {
         $variables = $this->getTemplateVariables();
         foreach ($variables as $variable) {
-            if(in_array('/'.$variable, $variables) || Str::contains(':', $variable)) {
+            [$sp] = explode('.', $variable);
+            if(in_array('/'.$sp, $variables)
+                || Str::contains(':', $variable) || Str::startsWith( $variable, '/')) {
                 continue;
-            }
-            foreach($blocks as $b => $block) {
-                foreach($block as $e => $entry) {
-                    foreach($variables as $variable) {
-                        if(isset($entry[$variable])) {
+            } else {
+                foreach ($blocks as $b => $block) {
+                    foreach ($block as $e => $entry) {
+                        if (isset($entry[$variable]) ) {
                             continue;
                         }
                         $blocks[$b][$e][$variable] = null;
                     }
                 }
             }
-
         }
         return $blocks;
     }
