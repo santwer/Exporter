@@ -93,7 +93,7 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
                 $savepath ? pathinfo($savepath,
                     PATHINFO_DIRNAME) : null);
         }
-        if ($format === 'pdf') {
+        if ($format === 'html') {
             return PDFExporter::html2Pdf($savepath,
                 $savepath ? pathinfo($savepath,
                     PATHINFO_DIRNAME) : null);

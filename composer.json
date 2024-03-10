@@ -4,9 +4,9 @@
     "type": "library",
     "license": "MIT",
     "require": {
-        "laravel/framework": "^8.0|^9.0",
-        "php": "^7.4|^8.0",
-        "phpoffice/phpword": "^v0.18"
+        "laravel/framework": "^8.0|^9.0|^10|^11",
+        "php": "^7.4|^8.0|^8.2|^8.2",
+        "phpoffice/phpword": "^v1.2"
     },
     "autoload": {
         "psr-4": {
@@ -19,5 +19,15 @@
             "email": "sven.antwertinger@tricept.de"
         }
     ],
-    "minimum-stability": "dev"
+    "minimum-stability": "dev",
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Santwer\\Exporter\\ExporterProvider"
+            ],
+            "aliases": {
+                "WordExport": "Santwer\\Exporter\\Facades\\WordExport"
+            }
+        }
+    }
 }

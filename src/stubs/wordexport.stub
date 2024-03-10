@@ -1,0 +1,40 @@
+<?php
+
+namespace {{ namespace }};
+
+use Santwer\Exporter\Concerns\FromWordTemplate;
+use Santwer\Exporter\Concerns\GlobalTokens;
+use Santwer\Exporter\Concerns\TokensFromCollection;
+use Illuminate\Support\Collection;
+
+class {{ class }} implements FromWordTemplate, TokensFromCollection, GlobalTokens
+{
+	public function wordTemplateFile() : string
+	{
+		return 'your/file.docx';
+	}
+
+    public function blockName():string
+    {
+        return 'data';
+    }
+
+    public function global(): array
+    {
+        return [
+
+        ];
+    }
+
+    public function itemTokens($item) : array
+    {
+        return [
+
+        ];
+    }
+
+    public function items(): Collection
+    {
+        return collect();
+    }
+}
