@@ -31,7 +31,144 @@ You can of course also manually edit your composer.json file
 }
 ```
 
-## How to use
+## How to use with ExportClasses
+
+### Usage
+You can use the WordExporter Facade as follows:
+```php
+use WordExporter\Facades\WordExporter;
+
+// Download as a Word file
+WordExporter::download(new MyExportClass(), 'final-word.docx');
+
+// Store the exported file
+WordExporter::store(new MyExportClass(), 'path/to/save/export.docx');
+
+// Queue it for later processing
+WordExporter::queue(new MyExportClass(), 'path/to/save/export.docx');
+```
+
+### Creating a New Export
+You can create a new export using the following Artisan command:
+```sh
+    php artisan make:word {className}
+```
+Replace {className} with the name of the new export class.
+
+Interfaces
+
+The object $export can be implemented with the following interfaces:
+
+
+| Interface           | Description                                                                        | Example                                         |
+|---------------------|------------------------------------------------------------------------------------|-------------------------------------------------|
+| `FromWordTemplate`  | Required. Interface indicating the export is from a Word template.                 | `class MyExportClass implements FromWordTemplate` |
+| `GlobalTokens`      | Interface for providing global tokens for replacement in Word template.            | `class MyGlobalTokens implements GlobalTokens`   |
+| `TokensFromArray`   | Interface for providing tokens from an array for replacement in Word template.     | `class MyArrayTokens implements TokensFromArray` |
+| `TokensFromCollection` | Interface for providing tokens from a collection for replacement in Word template. | `class MyCollectionTokens implements TokensFromCollection` |
+
+Each of these interfaces defines methods that need to be implemented according to the specific requirements of the export process. These methods typically involve returning an array of key-value pairs where keys represent placeholders in the Word template and values are the data to replace those placeholders with.
+
+### Example
+
+Word file:
+```word
+${TownDateFormat}
+
+
+${customer}
+    ${name}, ${email}
+    ${deliveryAddress.street}, ${deliveryAddress.city} ${deliveryAddress.postcode} 
+${/customer}
+```
+
+Controller:
+```php
+namespace App\Http\Controllers;
+
+use App\Http\Export\FirstExport;
+use Santwer\Exporter\Facade\WordExport;
+
+class HomeController extends Controller
+{
+    public function index()
+    {
+        return WordExport::download(new FirstExport(), 'myExport.docx');
+    }
+}
+```
+
+Export Class:
+
+```php
+namespace App\Http\Export;
+
+use Santwer\Exporter\Concerns\FromWordTemplate;
+use Santwer\Exporter\Concerns\GlobalTokens;
+use Santwer\Exporter\Concerns\TokensFromCollection;
+use Illuminate\Support\Collection;
+
+class FirstExport implements FromWordTemplate, TokensFromCollection, GlobalTokens
+{
+	public function items(): Collection
+	{
+		return collect([
+			[
+				'name' => 'Jane Smith',
+				'email' => 'jane.smith@example.com',
+				'deliveryAddress' => [
+					'street' => 'Main Street',
+					'city' => 'Metropolis',
+					'postcode' => '543210',
+				],
+			],
+			[
+				'name' => 'Alice Johnson',
+				'email' => 'alice.johnson@example.com',
+				'deliveryAddress' => [
+					'street' => 'Elm Street',
+					'city' => 'Springfield',
+					'postcode' => '987654',
+				],
+			],
+			[
+				'name' => 'Bob Williams',
+				'email' => 'bob.williams@example.com',
+				'deliveryAddress' => [
+					'street' => 'Oak Avenue',
+					'city' => 'Townsville',
+					'postcode' => '135792',
+				],
+			],
+		]);
+	}
+
+	public function blockName():string
+	{
+		return 'customer';
+	}
+
+	public function values(): array
+	{
+		return [
+			'TownDateFormat' => 'Townsville, '. now()->format('Y-m-d'),
+		];
+	}
+
+	public function itemTokens($item) : array
+	{
+		return $item;
+	}
+
+	public function wordTemplateFile(): string
+	{
+		return 'uploads/myDocFile.docx';
+	}
+}
+```
+
+
+## How to use in Query
 Add Trait *Exportable*
 ```php
 use Santwer\Exporter\Exportable;
@@ -218,9 +355,9 @@ class User implements HasTemplate {
 
 To export Customers with Name and e-mail addresses, it is needed to add the Block.
 ```word
-{customer}
-    {name}, {email}
-{/customer}
+${customer}
+    ${name}, ${email}
+${/customer}
 ```
 
 If there is a Relation within the customer.
@@ -242,10 +379,10 @@ class User implements HasTemplate {
 }
 ```
 ```word
-{customer}
-    {name}, {email}
-    {deliveryAddress.street}, {deliveryAddress.city} {deliveryAddress.postcode} 
-{/customer}
+${customer}
+    ${name}, ${email}
+    ${deliveryAddress.street}, ${deliveryAddress.city} ${deliveryAddress.postcode} 
+${/customer}
 ```
 
 If there is a Relation with a collection of Entries.
@@ -272,13 +409,13 @@ class User implements HasTemplate {
 }
 ```
 ```word
-{customer}
-    {name}, {email}
-    {orders}
-        {orders.product_id} {orders.order_date}
-        {deliveryAddress.street}, {deliveryAddress.city} {deliveryAddress.postcode} 
-    {/orders}
-{/customer}
+${customer}
+    ${name}, ${email}
+    ${orders}
+        ${orders.product_id} ${orders.order_date}
+        ${deliveryAddress.street}, ${deliveryAddress.city} ${deliveryAddress.postcode} 
+    ${/orders}
+${/customer}
 ```
 
 For each Relation it will add up its relation block name.
@@ -292,18 +429,18 @@ reduce it to one relation and get a certain Value in the relation.
 It will only select one entry.
 
 ```word
-{customer}
-    {name}, {email}
-    Order 15: {orders:15.product_id} {orders:15.order_date}
-{/customer}
+${customer}
+    ${name}, ${email}
+    Order 15: ${orders:15.product_id} ${orders:15.order_date}
+${/customer}
 ```
 
 However, you can set up one where condition to get the entry. 
 ```word
-{customer}
-    {name}, {email}
-    Order 15: {orders:product_id,=,4.product_id} {orders:product_id,=,4.order_date}
-{/customer}
+${customer}
+    ${name}, ${email}
+    Order 15: ${orders:product_id,=,4.product_id} ${orders:product_id,=,4.order_date}
+${/customer}
 ```
 
 If the Entry is not found the Values of the Model will be null.
