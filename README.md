@@ -26,7 +26,7 @@ You can of course also manually edit your composer.json file
 ```json
 {
     "require": {
-       "santwer/exporter": "v0.2.*"
+       "santwer/exporter": "v0.3.*"
     }
 }
 ```
