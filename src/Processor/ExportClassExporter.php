@@ -71,7 +71,7 @@ class ExportClassExporter
 
 
 		return Storage::disk($disk)
-			->putFile($filePath, $tmpfname,
+			->putFileAs($filePath, $tmpfname,
 				$diskOptions);
 	}
 
