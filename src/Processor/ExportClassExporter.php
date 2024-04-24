@@ -59,6 +59,7 @@ class ExportClassExporter
 	public function store(
 		object $export,
 		string $filePath,
+		string $filename,
 		string $disk = null,
 		string $writerType = null,
 		array  $diskOptions = []
@@ -71,7 +72,7 @@ class ExportClassExporter
 
 
 		return Storage::disk($disk)
-			->putFileAs($filePath, $tmpfname,
+			->putFileAs($filePath,$filename, $tmpfname,
 				$diskOptions);
 	}
 
