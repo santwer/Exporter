@@ -59,7 +59,6 @@ class ExportClassExporter
 	public function store(
 		object $export,
 		string $filePath,
-		string $filename,
 		string $disk = null,
 		string $writerType = null,
 		array  $diskOptions = []
@@ -72,7 +71,27 @@ class ExportClassExporter
 
 
 		return Storage::disk($disk)
-			->putFileAs($filePath,$filename, $tmpfname,
+			->putFile($filePath, $tmpfname,
+				$diskOptions);
+	}
+
+	public function storeAs(
+		object $export,
+		string $filePath,
+		string $name,
+		string $disk = null,
+		string $writerType = null,
+		array  $diskOptions = []
+	) {
+		$format = $this->getFormat($filePath, $writerType);
+		$tmpfname = tempnam(sys_get_temp_dir(), "php_we");
+		$this->exporter
+			->processFile($export)
+			->getProcessedConvertedFile($format, $tmpfname);
+
+
+		return Storage::disk($disk)
+			->putFileAs($filePath, $tmpfname, $name,
 				$diskOptions);
 	}
 
