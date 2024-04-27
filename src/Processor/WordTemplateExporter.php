@@ -2,9 +2,12 @@
 
 namespace Santwer\Exporter\Processor;
 
+use Santwer\Exporter\Concerns\TokensArray;
 use Santwer\Exporter\Concerns\GlobalTokens;
 use Santwer\Exporter\Concerns\TokensFromArray;
+use Santwer\Exporter\Concerns\TokensFromModel;
 use Santwer\Exporter\Concerns\FromWordTemplate;
+use Santwer\Exporter\Concerns\TokensFromObject;
 use Santwer\Exporter\Concerns\TokensFromCollection;
 use Santwer\Exporter\Exceptions\MissingConcernException;
 
@@ -29,6 +32,17 @@ class WordTemplateExporter
 		$exporter = new Exporter($file);
 		if ($this->hasConcern(TokensFromCollection::class) || $this->hasConcern(TokensFromArray::class)) {
 			$exporter->setBlockValues($this->export->blockName(), $this->formatData());
+		}
+
+		if ($this->hasConcern(TokensArray::class)) {
+			$exporter->setArray($this->export->tokens());
+		}
+		else if ($this->hasConcern(TokensFromObject::class)) {
+			$exporter->setObject($this->export->tokens());
+		}
+
+		if ($this->hasConcern(TokensFromModel::class)) {
+			$exporter->setObject($this->export->model());
 		}
 
 		if ($this->hasConcern(GlobalTokens::class)) {
