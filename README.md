@@ -44,6 +44,9 @@ WordExporter::download(new MyExportClass(), 'final-word.docx');
 // Store the exported file
 WordExporter::store(new MyExportClass(), 'path/to/save/export.docx');
 
+// Store the exported file with an certain filename
+WordExporter::storeAs(new MyExportClass(), 'path/to/save/', 'export.docx');
+
 // Queue it for later processing
 WordExporter::queue(new MyExportClass(), 'path/to/save/export.docx');
 ```
@@ -60,12 +63,15 @@ Interfaces
 The object $export can be implemented with the following interfaces:
 
 
-| Interface           | Description                                                                        | Example                                         |
-|---------------------|------------------------------------------------------------------------------------|-------------------------------------------------|
-| `FromWordTemplate`  | Required. Interface indicating the export is from a Word template.                 | `class MyExportClass implements FromWordTemplate` |
-| `GlobalTokens`      | Interface for providing global tokens for replacement in Word template.            | `class MyGlobalTokens implements GlobalTokens`   |
-| `TokensFromArray`   | Interface for providing tokens from an array for replacement in Word template.     | `class MyArrayTokens implements TokensFromArray` |
+| Interface              | Description                                                                        | Example                                         |
+|------------------------|------------------------------------------------------------------------------------|-------------------------------------------------|
+| `FromWordTemplate`     | Required. Interface indicating the export is from a Word template.                 | `class MyExportClass implements FromWordTemplate` |
+| `GlobalTokens`         | Interface for providing global tokens for replacement in Word template.            | `class MyGlobalTokens implements GlobalTokens`   |
+| `TokensFromArray`      | Interface for providing tokens from an array for replacement in Word template.     | `class MyArrayTokens implements TokensFromArray` |
 | `TokensFromCollection` | Interface for providing tokens from a collection for replacement in Word template. | `class MyCollectionTokens implements TokensFromCollection` |
+| `TokensArray`          | Interface for providing tokens from an array without any block data                |                                                            |
+| `TokensFromObject`     | Interface for providing tokens from an object/class without any block data         |                                                            |
+| `TokensFromModel`      | Interface for prodiding tokens from a model without any block data                 |                                                            |
 
 Each of these interfaces defines methods that need to be implemented according to the specific requirements of the export process. These methods typically involve returning an array of key-value pairs where keys represent placeholders in the Word template and values are the data to replace those placeholders with.
 
