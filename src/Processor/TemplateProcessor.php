@@ -2,8 +2,21 @@
 
 namespace Santwer\Exporter\Processor;
 
+use PhpOffice\PhpWord\Shared\Text;
+
 class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 {
+
+	/**
+	 * @param ?string $subject
+	 *
+	 * @return string
+	 */
+	protected static function ensureUtf8Encoded($subject)
+	{
+		return is_string($subject) || $subject ? Text::toUTF8($subject) : '';
+	}
+
     /**
      * Clone a block.
      *
