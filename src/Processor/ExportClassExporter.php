@@ -35,9 +35,13 @@ class ExportClassExporter
 		$format = $this->getFormat($fileName, $writerType);
 
 
-		$this->exporter
+		$file=$this->exporter
 			->processFile($export)
 			->getProcessedConvertedFile($format, $tmpfname);
+
+		if($format === Writer::PDF) {
+			$tmpfname = $file;
+		}
 		if ($format === Writer::PDF && !isset($headers['Content-Type'])) {
 			$headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 		}
@@ -65,10 +69,12 @@ class ExportClassExporter
 	) {
 		$format = $this->getFormat($filePath, $writerType);
 		$tmpfname = tempnam(sys_get_temp_dir(), "php_we");
-		$this->exporter
+		$file = $this->exporter
 			->processFile($export)
 			->getProcessedConvertedFile($format, $tmpfname);
-
+		if($format === Writer::PDF) {
+			$tmpfname = $file;
+		}
 
 		return Storage::disk($disk)
 			->putFile($filePath, $tmpfname,
@@ -83,12 +89,14 @@ class ExportClassExporter
 		string $writerType = null,
 		array  $diskOptions = []
 	) {
-		$format = $this->getFormat($filePath, $writerType);
+		$format = $this->getFormat($name, $writerType);
 		$tmpfname = tempnam(sys_get_temp_dir(), "php_we");
-		$this->exporter
+		$file = $this->exporter
 			->processFile($export)
 			->getProcessedConvertedFile($format, $tmpfname);
-
+		if($format === Writer::PDF) {
+			$tmpfname = $file;
+		}
 
 		return Storage::disk($disk)
 			->putFileAs($filePath, $tmpfname, $name,

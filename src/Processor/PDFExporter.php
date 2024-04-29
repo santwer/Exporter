@@ -2,6 +2,8 @@
 
 namespace Santwer\Exporter\Processor;
 
+use Illuminate\Support\Str;
+
 class PDFExporter
 {
     protected static $baseCommenad = 'soffice';
@@ -10,7 +12,7 @@ class PDFExporter
 
     public static function html2Pdf(string $html, ?string $path = null)
     {
-        $htmlfile = tempnam(sys_get_temp_dir(), 'gts_export_');
+        $htmlfile = tempnam(sys_get_temp_dir(), 'php_we_pdf');
 
         $handler = fopen($htmlfile, "w");
         fwrite($handler, $html);
@@ -42,7 +44,13 @@ class PDFExporter
         if(!self::checkReturnValue($return)) {
             throw new \Exception($return);
         }
-        return self::$outPutFile;
+		if($path !== null) {
+			//get file extension
+			$fileext = pathinfo($docX, PATHINFO_EXTENSION);
+			return Str::replace('.'.$fileext, '.pdf', $docX);
+		}
+
+        return $path . pathinfo($docX, PATHINFO_FILENAME) . '.pdf';
     }
 
     /**
