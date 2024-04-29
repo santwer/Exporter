@@ -4,6 +4,8 @@ namespace Santwer\Exporter\Processor;
 
 use Santwer\Exporter\Writer;
 use Illuminate\Support\Facades\Storage;
+use Santwer\Exporter\Helpers\ExportHelper;
+use Santwer\Exporter\Exportables\Exportable;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ExportClassExporter
@@ -32,14 +34,14 @@ class ExportClassExporter
 	): BinaryFileResponse {
 		$tmpfname = tempnam(sys_get_temp_dir(), "php_we");
 
-		$format = $this->getFormat($fileName, $writerType);
+		$format = ExportHelper::getFormat($fileName, $writerType);
 
 
-		$file=$this->exporter
+		$file = $this->exporter
 			->processFile($export)
 			->getProcessedConvertedFile($format, $tmpfname);
 
-		if($format === Writer::PDF) {
+		if ($format === Writer::PDF) {
 			$tmpfname = $file;
 		}
 		if ($format === Writer::PDF && !isset($headers['Content-Type'])) {
@@ -67,12 +69,12 @@ class ExportClassExporter
 		string $writerType = null,
 		array  $diskOptions = []
 	) {
-		$format = $this->getFormat($filePath, $writerType);
+		$format = ExportHelper::getFormat($filePath, $writerType);
 		$tmpfname = tempnam(sys_get_temp_dir(), "php_we");
 		$file = $this->exporter
 			->processFile($export)
 			->getProcessedConvertedFile($format, $tmpfname);
-		if($format === Writer::PDF) {
+		if ($format === Writer::PDF) {
 			$tmpfname = $file;
 		}
 
@@ -89,12 +91,12 @@ class ExportClassExporter
 		string $writerType = null,
 		array  $diskOptions = []
 	) {
-		$format = $this->getFormat($name, $writerType);
+		$format = ExportHelper::getFormat($name, $writerType);
 		$tmpfname = tempnam(sys_get_temp_dir(), "php_we");
 		$file = $this->exporter
 			->processFile($export)
 			->getProcessedConvertedFile($format, $tmpfname);
-		if($format === Writer::PDF) {
+		if ($format === Writer::PDF) {
 			$tmpfname = $file;
 		}
 
@@ -104,28 +106,24 @@ class ExportClassExporter
 	}
 
 	/**
-	 * @param  string       $fileName
-	 * @param  string|null  $writerType
-	 * @return string
-	 * @throws \Exception
+	 * @param  Exportable  ...$exports
+	 * @return void
 	 */
-	private function getFormat(
-		string $fileName,
-		string $writerType = null
-	): string {
-
-		if ($writerType) {
-			if (!in_array(strtolower($writerType), Writer::formats())) {
-				return Writer::DOCX;
-			}
-
-			return strtolower($writerType);
+	public function batchStore(
+		Exportable ...$exports
+	): bool
+	{
+		$batch = ExportHelper::generateRandomString();
+		$folder = null;
+		foreach ($exports as $export) {
+			$folder = $export->process(clone $this->exporter, $batch);
 		}
-		$ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-		if (empty($ext)) {
-			return Writer::DOCX;
+		$files = ExportHelper::processWordToPdf($folder);
+		foreach ($exports as $export) {
+			$export->copyOwnFileOfArray($files);
 		}
-
-		return $this->getFormat($fileName, $ext);
+		return true;
 	}
+
+
 }
