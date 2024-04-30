@@ -1,5 +1,6 @@
 # Word Template Exporter #
-Package for easy Word exports in Laravel on given Templates.
+Package for easy Word exports in Laravel on given Templates. 
+This package is based on [phpoffice/phpword](https://github.com/PHPOffice/PHPWord). 
 
 <p style="text-align: center;">
 <a href="https://github.com/santwer/exporter"><img src="https://img.shields.io/github/commit-activity/m/santwer/exporter" alt="Commit Activity"></a>
@@ -7,6 +8,25 @@ Package for easy Word exports in Laravel on given Templates.
 <a href="https://packagist.org/packages/santwer/exporter"><img src="https://img.shields.io/packagist/v/santwer/exporter" alt="Latest Stable Version"></a>
 <a href="https://packagist.org/packages/santwer/exporter"><img src="https://img.shields.io/packagist/l/santwer/exporter" alt="License"></a>
 </p>
+
+## Table of Contents
+- [Installation](#installation)
+- [Configuration](#configuration-optional)
+- [How to use with ExportClasses](#how-to-use-with-exportclasses)
+    - [Usage](#usage)
+    - [Creating a New Export](#creating-a-new-export)
+    - [Example](#example)
+    - [Charts](#charts)
+    - [Images](#images)
+    - [Tables](#tables)
+- [How to use in Query](#how-to-use-in-query)
+    - [Basic Export](#basic-export)
+    - [Export as PDF](#export-as-pdf)
+    - [Autoloading Relations](#autoloading-relations)
+    - [Variables](#variables)
+    - [Template Variables/Blocks](#template-variablesblocks)
+    - [Relation Variable with Condition](#relation-variable-with-condition)
+- [Template](#template)
 
 ## Installation
 
@@ -31,10 +51,24 @@ You can of course also manually edit your composer.json file
 }
 ```
 
+### Configuration (optional)
+To use pdf export it is needed to install LibreOffice. WordTemplateExporter is using the soffice command to convert the docx file to pdf. 
+
+```sh
+    sudo apt-get install libreoffice
+```
+#### Windows
+Download and install LibreOffice from [here](https://www.libreoffice.org/download/download/)
+Also add the path to the soffice command to the system environment variables.
+
+```sh
+    export PATH=$PATH:/path/to/soffice
+```
+
 ## How to use with ExportClasses
 
 ### Usage
-You can use the WordExporter Facade as follows:
+You can use the WordExporter Facade as follows. The format of the exported file is determined by the file extension. Supported formats are .docx and .pdf.
 ```php
 use WordExporter\Facades\WordExporter;
 
@@ -46,6 +80,13 @@ WordExporter::store(new MyExportClass(), 'path/to/save/export.docx');
 
 // Store the exported file with an certain filename
 WordExporter::storeAs(new MyExportClass(), 'path/to/save/', 'export.docx');
+
+// Store the exported file with an certain filename as a batch
+WordExporter::batchStore(
+    new Exportable(new MyExportClass(), 'path/to/save/', 'export.docx'),
+    new Exportable(new MyExportClass1(), 'path/to/save/', 'export1.docx'),
+    new Exportable(new MyExportClass2(), 'path/to/save/', 'export2.pdf'),
+    );
 
 // Queue it for later processing
 WordExporter::queue(new MyExportClass(), 'path/to/save/export.docx');
@@ -63,15 +104,18 @@ Interfaces
 The object $export can be implemented with the following interfaces:
 
 
-| Interface              | Description                                                                        | Example                                         |
-|------------------------|------------------------------------------------------------------------------------|-------------------------------------------------|
-| `FromWordTemplate`     | Required. Interface indicating the export is from a Word template.                 | `class MyExportClass implements FromWordTemplate` |
-| `GlobalTokens`         | Interface for providing global tokens for replacement in Word template.            | `class MyGlobalTokens implements GlobalTokens`   |
-| `TokensFromArray`      | Interface for providing tokens from an array for replacement in Word template.     | `class MyArrayTokens implements TokensFromArray` |
-| `TokensFromCollection` | Interface for providing tokens from a collection for replacement in Word template. | `class MyCollectionTokens implements TokensFromCollection` |
-| `TokensArray`          | Interface for providing tokens from an array without any block data                |                                                            |
-| `TokensFromObject`     | Interface for providing tokens from an object/class without any block data         |                                                            |
-| `TokensFromModel`      | Interface for prodiding tokens from a model without any block data                 |                                                            |
+| Interface         | Description                                                                               | Example                                         |
+|-------------------|-------------------------------------------------------------------------------------------|-------------------------------------------------|
+| `FromWordTemplate` | Required. Interface indicating the export is from a Word template.                        | `class MyExportClass implements FromWordTemplate` |
+| `GlobalTokens`    | Interface for providing global tokens for replacement in Word template.                   | `class MyGlobalTokens implements GlobalTokens`   |
+| `TokensFromArray` | Interface for providing tokens from an array for replacement in Word template.            | `class MyArrayTokens implements TokensFromArray` |
+| `TokensFromCollection` | Interface for providing tokens from a collection for replacement in Word template.        | `class MyCollectionTokens implements TokensFromCollection` |
+| `TokensArray`     | Interface for providing tokens from an array without any block data                       |                                                            |
+| `TokensFromObject` | Interface for providing tokens from an object/class without any block data                |                                                            |
+| `TokensFromModel` | Interface for prodiding tokens from a model without any block data                        |                                                            |
+| `WithCharts`      | Interface that allows you to replace text charts as array                                 |                                                            |
+| `WithCheckboxes`  | Interfaces that allows you to replace text with Checkboxes, either checked or not checked |                                                            |
+| `WithImages`      | Interface that allows you to replace text with Images                                     |                                                            |
 
 Each of these interfaces defines methods that need to be implemented according to the specific requirements of the export process. These methods typically involve returning an array of key-value pairs where keys represent placeholders in the Word template and values are the data to replace those placeholders with.
 
@@ -173,6 +217,148 @@ class FirstExport implements FromWordTemplate, TokensFromCollection, GlobalToken
 }
 ```
 
+### Charts
+To replace a chart in a Word template, you can use the `WithCharts` interface. This interface requires the implementation of the `charts` method, which should return an array of key-value pairs where keys represent placeholders in the Word template and values are the data to replace those placeholders with.
+You can find all infos about the charts [here](https://phpoffice.github.io/PHPWord/usage/template.html#setchartvalue)
+
+Possible types are `'pie', 'doughnut', 'line', 'bar', 'stacked_bar', 'percent_stacked_bar', 'column', 'stacked_column', 'percent_stacked_column', 'area', 'radar', 'scatter'`
+
+```php
+namespace App\Http\Export;
+use Santwer\Exporter\Concerns\FromWordTemplate;
+use Santwer\Exporter\Concerns\GlobalTokens;
+use Santwer\Exporter\Concerns\WithCharts;
+use Santwer\Exporter\Concerns\TokensFromCollection;
+use Illuminate\Support\Collection;
+
+class FirstExport implements FromWordTemplate, TokensFromCollection, GlobalTokens, WithCharts
+{
+    public function charts(): array
+	{
+
+		return [
+			'radar' => function () {
+				$categories = array('A', 'B', 'C', 'D', 'E');
+				$series1 = [1, 3, 2, 5, 4];
+
+				$chart = new Chart('radar', $categories, $series1,
+					[
+						'width' => 1000000*5,
+						'height' => 1000000*5,
+						'showLegend' => true
+
+					],'Series 1');
+				$chart->addSeries($categories, [3, 4, 5, 1, 2], 'Series 2');
+				return $chart;
+			},
+		];
+	}
+	
+	public function items(): Collection
+	{
+		return collect([
+            
+		]);
+	}
+
+	...
+}
+
+```
+
+### Images
+To replace an image in a Word template, you can use the `WithImages` interface. This interface requires the implementation of the `images` method, which should return an array of key-value pairs where keys represent placeholders in the Word template and values are the data to replace those placeholders with.
+
+For more Details how to set Images you can find [here](https://phpoffice.github.io/PHPWord/usage/template.html#setimagevalue)
+
+```php
+namespace App\Http\Export;
+
+use Santwer\Exporter\Concerns\FromWordTemplate;
+use Santwer\Exporter\Concerns\GlobalTokens;
+use Santwer\Exporter\Concerns\WithImages;
+use Santwer\Exporter\Concerns\TokensFromCollection;
+use Illuminate\Support\Collection;
+
+class FirstExport implements FromWordTemplate, TokensFromCollection, GlobalTokens, WithImages
+{
+    public function images(): array
+    {
+        return [
+            'CompanyLogo' => public_path('images/logo.jpg'),
+            'UserLogo' => 'path' => public_path('images/logo.jpg'), 'width' => 100, 'height' => 100, 'ratio' => false,
+            'image1' => function () {
+                return [
+                    'path' => public_path('images/image1.jpg'),
+                    'width' => 100,
+                    'height' => 100,
+                    'ratio' => false,
+                ];
+            },
+        ];
+    }
+    
+    public function items(): Collection
+    {
+        return collect([
+            
+        ]);
+    }
+
+    ...
+}
+
+```
+
+### Tables
+
+To replace a table in a Word template, you can use the `WithTables` interface. This interface requires the implementation of the `tables` method, which should return an array of key-value pairs where keys represent placeholders in the Word template and values are the data to replace those placeholders with.
+
+Note: For export in pdf at least the headers need the width of the columns. Not settet column widths might not be shown.
+
+```php
+namespace App\Http\Export;
+
+use Santwer\Exporter\Concerns\FromWordTemplate;
+use Santwer\Exporter\Concerns\GlobalTokens;
+use Santwer\Exporter\Concerns\WithTables;
+use Santwer\Exporter\Concerns\TokensFromCollection;
+use Illuminate\Support\Collection;
+
+class FirstExport implements FromWordTemplate, TokensFromCollection, GlobalTokens, WithTables
+{
+    public function tables(): array
+    {
+        return [
+            'table1' => function () {
+                return [
+                    'headers' => [['width' => 3000, 'text' => 'Name'], 'Email', 'Address'],
+                    'rows' => [
+                        ['Jane Smith', 'jane@smith.com', 'Main Street'],
+                        ['Alice Johnson', 'alice@johnson.com', 'Elm Street'],
+                        ['Bob Williams', 'bob@williams.com', 'Oak Avenue'],
+                    ],
+                    'style' => [
+                        'borderSize' => 6,
+                        'borderColor' => 'green',
+                        'width' => 6000,
+                    ],
+                ];
+            },
+        ];
+    }
+    
+    public function items(): Collection
+    {
+        return collect([
+            
+        ]);
+    }
+
+    ...
+}
+    
+```
 
 ## How to use in Query
 Add Trait *Exportable*
@@ -271,7 +457,7 @@ return User::find(1234)
         ->export('filename.docx', ['template' =>' templatefile.docx']);
 ```
 
-## Export as PDF
+### Export as PDF
 Generally with the option format = pdf it is possible to export pdf. 
 It is important that libreOffice is installed for that actions.
 ```php
@@ -290,7 +476,7 @@ return User::where(...)
 ```
 
 
-## Autoloading Relations
+### Autoloading Relations
 
 Before exporting, the Package is checking for defined Relations.
 If there is no related Variable it will automatically remove unneeded relations. 
@@ -317,7 +503,7 @@ return User::template('templatefile.docx')->export();
 ```
 If the Relation is already loaded it will not be affected. 
 
-## Variables
+### Variables
 
 It is possible to set up variables which are not affected by the Model or Query.
 ```php
@@ -335,16 +521,7 @@ use Santwer\Exporter\Processor\GlobalVariables;
       ]);
 ```
 
-
-## Template
-
-The Template should be DOCX or DOC. The File will be cloned and saved in the sys_temp_folder as long it has no store option. 
-For PDF exports it is needed to use LibreOffice. Therefore, the soffice command needs to be executable.
-
-For the Templateprocessing it uses [phpoffice/phpword](https://github.com/PHPOffice/PHPWord)
-More Infos you can find [here](https://phpword.readthedocs.io/en/latest/templates-processing.html)
-
-## Template Variables/Blocks
+### Template Variables/Blocks
 
 In the template the package always looks for loops/Blocks (except for Global Variables). 
 By Default the Blockname is the name of the table. It is also possible to use an own name for that. 
@@ -450,3 +627,11 @@ ${/customer}
 ```
 
 If the Entry is not found the Values of the Model will be null.
+
+## Template
+
+The Template should be DOCX or DOC. The File will be cloned and saved in the sys_temp_folder as long it has no store option.
+For PDF exports it is needed to use LibreOffice. Therefore, the soffice command needs to be executable.
+
+For the Templateprocessing it uses [phpoffice/phpword](https://github.com/PHPOffice/PHPWord)
+More Infos you can find [here](https://phpword.readthedocs.io/en/latest/templates-processing.html)

@@ -1,6 +1,6 @@
 {
     "name": "santwer/exporter",
-    "description": "Laravel Package to Export with tokens into word templates",
+    "description": "Laravel Package for easy Word exports in Laravel on given Templates. This package is based on PHPWord.",
     "type": "library",
     "license": "MIT",
     "require": {
@@ -15,8 +15,8 @@
     },
     "authors": [
         {
-            "name": "Sven Antwertwetiner",
-            "email": "sven.antwertinger@tricept.de"
+            "name": "Sven Antwertinger",
+            "email": "sven@kouky.de"
         }
     ],
     "minimum-stability": "dev",

@@ -3,15 +3,22 @@
 namespace Santwer\Exporter\Processor;
 
 use Illuminate\Support\Str;
+use PhpOffice\PhpWord\Element\Table;
 use Santwer\Exporter\Eloquent\Builder;
 
 class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 {
 	protected $wordfile;
 
-	protected $values = [];
+	protected array $values = [];
 
-	protected $blocks = [];
+	protected array $blocks = [];
+
+	protected array $checkboxes = [];
+
+	protected array $charts = [];
+	protected array $images = [];
+	protected array $tables = [];
 
 	protected $templateProcessor;
 
@@ -25,6 +32,12 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 	{
 		$this->wordfile = $wordfile;
 	}
+
+	public function setTemplateProcessor(callable $templateProcessor): void
+	{
+		$templateProcessor($this->templateProcessor);
+	}
+
 
 	public function getTemplateVariables()
 	{
@@ -48,7 +61,7 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 		$returnArray = [];
 		foreach ($array as $key => $value) {
 			if (is_array($value)) {
-				$returnArray[$prefix.'.'.$key] = $this->setArray($value, $prefix.'.'.$key);
+				$this->setArray($value, $prefix.'.'.$key);
 				continue;
 			}
 			$returnArray[$prefix.'.'.$key] = $value;
@@ -83,6 +96,25 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 	public function setValue($name, $value)
 	{
 		$this->values[$name] = $value;
+	}
+
+	public function setCheckbox(string $name, bool $value)
+	{
+		$this->checkboxes[$name] = $value;
+	}
+
+	public function setChart(string $name,object $value)
+	{
+		$this->charts[$name] = $value;
+	}
+	public function setImage(string $name, $value)
+	{
+		$this->images[$name] = $value;
+	}
+
+	public function setTables(array $tables)
+	{
+		$this->tables = $tables;
 	}
 
 
@@ -159,6 +191,28 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 			$this->builder->checkForRelations($templateProcessor->getVariables());
 		}
 		$this->blocks = $this->addEmptyValues($this->blocks);
+		if (!empty($this->checkboxes)) {
+			foreach ($this->checkboxes as $checkbox => $value) {
+				$templateProcessor->setCheckbox($checkbox, $value);
+			}
+		}
+		if (!empty($this->charts)) {
+			foreach ($this->charts as $chartName => $value) {
+				$templateProcessor->setChart($chartName, $value);
+			}
+		}
+		if (!empty($this->images)) {
+			foreach ($this->images as $image => $value) {
+				$templateProcessor->setImageValue($image, $value);
+			}
+		}
+
+		if(!empty($this->tables)) {
+			foreach ($this->tables as $table => $tableData) {
+				$templateProcessor->setComplexBlock($table, $this->tableDataToComplexBlock($tableData));
+			}
+		}
+
 		if (!empty($this->blocks)) {
 
 			foreach ($this->blocks as $block => $replacement) {
@@ -177,6 +231,55 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 
 		return $templateProcessor;
 	}
+
+	/**
+	 * transform table data to complex block
+	 * @param $tableData
+	 * @return Table
+	 */
+	private function tableDataToComplexBlock($tableData) : Table
+	{
+
+		if(is_callable($tableData)) {
+			$tableData = $tableData();
+		}
+		$style = isset($tableData['style']) ? $tableData['style'] : null;
+		$table = new Table($style);
+
+		if(isset($tableData['headers'])) {
+			$table->addRow();
+			foreach ($tableData['headers'] as $header) {
+				if(is_array($header)) {
+					$table->addCell(
+						isset($header['width']) ? $header['width'] : null,
+						isset($header['style']) ? $header['style'] : null
+					)->addText($header['text']);
+				} else {
+					$table->addCell()->addText($header);
+				}
+			}
+
+		}
+
+		if(isset($tableData['rows'])) {
+			foreach ($tableData['rows'] as $row) {
+				$table->addRow();
+				foreach ($row as $column) {
+					if(is_array($column)) {
+						$table->addCell(
+							isset($column['width']) ? $column['width'] : null,
+							isset($column['style']) ? $column['style'] : null
+						)->addText($column['text']);
+					} else {
+						$table->addCell()->addText($column);
+					}
+				}
+			}
+		}
+
+		return $table;
+	}
+
 
 	private function addEmptyValues($blocks)
 	{
