@@ -13,7 +13,10 @@ trait BatchProcessor
 	protected string $file = '';
 	protected ?string $filePDF = null;
 	protected string $format = '';
-	public function process(WordTemplateExporter $exporter, string $batch) {
+	protected $callableDone = null;
+	protected $callablePDFDone = null;
+	public function process(WordTemplateExporter $exporter, string $batch)
+	{
 		$this->batch = $batch;
 		$this->format = ExportHelper::getFormat($this->name, $this->writerType);
 		[$tmpfname, $folder] = ExportHelper::tempFileName($batch);
@@ -26,6 +29,7 @@ trait BatchProcessor
 			->getProcessedConvertedFile(Writer::DOCX, $tmpfname);
 
 		if($this->format === Writer::PDF) {
+			$this->callDone(Writer::PDF);
 			return $folder;
 		}
 
@@ -35,8 +39,45 @@ trait BatchProcessor
 		if($putFileAs) {
 			unlink($tmpfname);
 		}
+		$this->callDone($putFileAs);
 		return $putFileAs;
 
+	}
+
+	private function callDone($putFileAs)
+	{
+		if(!is_callable($this->callableDone)) {
+			return;
+		}
+		call_user_func($this->callableDone, $putFileAs);
+	}
+
+	private function callPDFDone($putFileAs)
+	{
+		if(!is_callable($this->callablePDFDone)) {
+			return;
+		}
+		call_user_func($this->callablePDFDone, $putFileAs);
+	}
+
+	/**
+	 * Gets fired when the Templating is Done. If the Process needs to use PDF on a Batch, it will be fired before the PDF convert
+	 * @param  callable  $callable
+	 * @return void
+	 */
+	public function whenDone(callable $callable)
+	{
+		$this->callableDone = $callable;
+	}
+
+	/**
+	 *
+	 * @param  callable  $callable
+	 * @return void
+	 */
+	public function whenPDFDone(callable $callable)
+	{
+		$this->callablePDFDone = $callable;
 	}
 
 	/**
@@ -47,9 +88,11 @@ trait BatchProcessor
 	{
 		foreach ($files as $file) {
 			if(Str::contains($file, $this->filePDF)) {
-				return Storage::disk($this->disk)
+				$putFileAs = Storage::disk($this->disk)
 					->putFileAs($this->filePath, $file, $this->name,
 						$this->diskOptions);
+				$this->callDone($putFileAs);
+				return $putFileAs;
 			}
 		}
 		return false;
