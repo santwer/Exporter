@@ -5,7 +5,9 @@ namespace Santwer\Exporter\Processor;
 use Santwer\Exporter\Writer;
 use Illuminate\Support\Facades\Storage;
 use Santwer\Exporter\Helpers\ExportHelper;
+use Santwer\Exporter\Jobs\WordProcessorJob;
 use Santwer\Exporter\Exportables\Exportable;
+use Illuminate\Foundation\Bus\PendingDispatch;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ExportClassExporter
@@ -122,7 +124,17 @@ class ExportClassExporter
 		foreach ($exports as $export) {
 			$export->copyOwnFileOfArray($files);
 		}
+		ExportHelper::cleanGarbage();
 		return true;
+	}
+
+
+	public function batchQueue(Exportable ...$exports)
+	{
+		$batch = ExportHelper::generateRandomString();
+		foreach ($exports as $export) {
+			WordProcessorJob::dispatch($this->exporter, $export, $batch);
+		}
 	}
 
 

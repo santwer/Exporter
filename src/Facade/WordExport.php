@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  * @method static false|string storeAs(object $export, string $filePath, string $name, string $disk = null, string $writerType = null, $diskOptions = [])
  * @method static PendingDispatch queue(object $export, string $filePath, string $disk = null, string $writerType = null, $diskOptions = [])
  * @method static false|string batchStore(Exportable ...$exports)
+ * @method static PendingDispatch batchQueue(Exportable ...$exports)
  */
 class WordExport extends Facade
 {

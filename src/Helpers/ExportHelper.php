@@ -6,6 +6,7 @@ use DirectoryIterator;
 use Illuminate\Support\Str;
 use Santwer\Exporter\Writer;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\File;
 use Santwer\Exporter\Processor\PDFExporter;
 use Santwer\Exporter\Processor\GlobalVariables;
 use Santwer\Exporter\Exceptions\TempFolderException;
@@ -14,6 +15,7 @@ class ExportHelper
 {
 	protected static int $subBatch = 0;
 	protected static int $subBatchCalls = 0;
+	protected static array $garbage = [];
 	public static function generateRandomString()
 	{
 		return uniqid();
@@ -87,24 +89,38 @@ class ExportHelper
 	public static function processWordToPdf(string $folder) : array
 	{
 		$dirs = new DirectoryIterator($folder);
-
+		$files = [];
 		foreach ($dirs as $dir) {
 			if($dir->isDot()) continue;
 			if ($dir->isDir()) {
-				PDFExporter::docxToPdf($folder.DIRECTORY_SEPARATOR.$dir->getFilename().DIRECTORY_SEPARATOR.'*', $folder);
-				try {
-					//try to delete to save disk space
-					array_map('unlink', glob($folder.DIRECTORY_SEPARATOR.$dir->getFilename().DIRECTORY_SEPARATOR."/*"));
-					rmdir($folder.DIRECTORY_SEPARATOR.$dir->getFilename());
-				} catch (\Exception $exception) {
-					Log::error($exception->getMessage());
-					//folder could not be deleted, not a throwable error since its temp folder
+				$subfolder = $folder.DIRECTORY_SEPARATOR.$dir->getFilename();
+				PDFExporter::docxToPdf($subfolder.DIRECTORY_SEPARATOR.'*', $subfolder);
+				$subFiles = glob($subfolder .DIRECTORY_SEPARATOR. '*.pdf');
+				if(false !== $subFiles) {
+					$files = array_merge($files, $subFiles);
 				}
 			}
 		}
-
-		$files = glob($folder .DIRECTORY_SEPARATOR. '*.pdf');
-
+		self::garbageCollector($folder);
 		return $files;
+	}
+
+	public static function garbageCollector(string $folder)
+	{
+		self::$garbage[] = $folder;
+	}
+
+	public static function cleanGarbage()
+	{
+		foreach (self::$garbage as $folder) {
+			try {
+				//try to delete to save disk space
+				File::deleteDirectory($folder);
+
+			} catch (\Exception $exception) {
+				Log::error($exception->getMessage());
+				//folder could not be deleted, not a throwable error since its temp folder
+			}
+		}
 	}
 }

@@ -15,7 +15,7 @@ trait BatchProcessor
 	protected string $format = '';
 	protected $callableDone = null;
 	protected $callablePDFDone = null;
-	public function process(WordTemplateExporter $exporter, string $batch)
+	public function process(WordTemplateExporter $exporter, string $batch,bool $returnFile = false)
 	{
 		$this->batch = $batch;
 		$this->format = ExportHelper::getFormat($this->name, $this->writerType);
@@ -30,6 +30,9 @@ trait BatchProcessor
 
 		if($this->format === Writer::PDF) {
 			$this->callDone(Writer::PDF);
+			if($returnFile) {
+				return $tmpfname;
+			}
 			return $folder;
 		}
 
@@ -42,6 +45,13 @@ trait BatchProcessor
 		$this->callDone($putFileAs);
 		return $putFileAs;
 
+	}
+
+	public function getFormat() : string
+	{
+		return empty($this->format) ?
+			ExportHelper::getFormat($this->name, $this->writerType)
+			: $this->format;
 	}
 
 	private function callDone($putFileAs)
