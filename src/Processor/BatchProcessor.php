@@ -91,7 +91,7 @@ trait BatchProcessor
 				$putFileAs = Storage::disk($this->disk)
 					->putFileAs($this->filePath, $file, $this->name,
 						$this->diskOptions);
-				$this->callDone($putFileAs);
+				$this->callPDFDone($putFileAs);
 				return $putFileAs;
 			}
 		}
