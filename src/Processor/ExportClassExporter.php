@@ -3,6 +3,7 @@
 namespace Santwer\Exporter\Processor;
 
 use Santwer\Exporter\Writer;
+use Santwer\Exporter\Jobs\WordToPDF;
 use Illuminate\Support\Facades\Storage;
 use Santwer\Exporter\Helpers\ExportHelper;
 use Santwer\Exporter\Jobs\WordProcessorJob;
@@ -113,8 +114,7 @@ class ExportClassExporter
 	 */
 	public function batchStore(
 		Exportable ...$exports
-	): bool
-	{
+	): bool {
 		$batch = ExportHelper::generateRandomString();
 		$folder = null;
 		foreach ($exports as $export) {
@@ -125,16 +125,38 @@ class ExportClassExporter
 			$export->copyOwnFileOfArray($files);
 		}
 		ExportHelper::cleanGarbage();
+
 		return true;
 	}
 
 
-	public function batchQueue(Exportable ...$exports)
+	public function batchQueue(Exportable ...$exports): array
 	{
+		$pending = [];
 		$batch = ExportHelper::generateRandomString();
 		foreach ($exports as $export) {
-			WordProcessorJob::dispatch($this->exporter, $export, $batch);
+			[$callableDone, $callablePDFDone] = $export->getClosures();
+			$export->whenPDFDone(null);
+			$export->whenDone(null);
+			$export->preProcess($batch);
+			$pending[] = WordProcessorJob::dispatch($this->exporter, $export);
+			if ($callableDone) {
+				$pending[] = dispatch(function () use ($callableDone) {
+					call_user_func($callableDone, null);
+				});
+			}
+			if ($export->getFormat() === Writer::PDF) {
+				$pending[] = WordToPDF::dispatch($export);
+
+				if ($callablePDFDone) {
+					$pending[] = dispatch(function () use ($callableDone) {
+						call_user_func($callableDone, null);
+					});
+				}
+			}
 		}
+
+		return $pending;
 	}
 
 

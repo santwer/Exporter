@@ -16,6 +16,7 @@ class ExportHelper
 	protected static int $subBatch = 0;
 	protected static int $subBatchCalls = 0;
 	protected static array $garbage = [];
+	protected static array $garbageFiles = [];
 	public static function generateRandomString()
 	{
 		return uniqid();
@@ -108,6 +109,10 @@ class ExportHelper
 	public static function garbageCollector(string $folder)
 	{
 		self::$garbage[] = $folder;
+	}
+	public static function garbageCollectorFiles(string $file)
+	{
+		self::$garbage[] = $file;
 	}
 
 	public static function cleanGarbage()

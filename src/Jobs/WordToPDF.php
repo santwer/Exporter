@@ -16,10 +16,10 @@ class WordToPDF implements ShouldQueue
 
 	protected Exportable $export;
 	protected string $folder;
-	public function __construct(Exportable $export, string $folder)
+	public function __construct(Exportable $export)
 	{
 		$this->export = $export;
-		$this->folder = $folder;
+		$this->folder = $export->getFolder();
 	}
 
 	public function handle(): void

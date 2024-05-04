@@ -18,19 +18,15 @@ class WordProcessorJob implements ShouldQueue
 	protected Exportable $export;
 	protected WordTemplateExporter $exporter;
 	protected string $batch;
-	public function __construct(WordTemplateExporter $exporter, Exportable $export,string $batch)
+	public function __construct(WordTemplateExporter $exporter, Exportable $export)
 	{
 		$this->exporter = $exporter;
 		$this->export = $export;
-		$this->batch = $batch;
 	}
 
 	public function handle(): void
 	{
-		$folder = $this->export->process($this->exporter, $this->batch);
-		if($this->export->getFormat() === Writer::PDF) {
-			WordToPDF::dispatch($this->export, $folder);
-		}
+		$this->export->subProcess($this->exporter);
 
 	}
 }

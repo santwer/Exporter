@@ -13,38 +13,47 @@ trait BatchProcessor
 	protected string $file = '';
 	protected ?string $filePDF = null;
 	protected string $format = '';
+	protected string $folder = '';
 	protected $callableDone = null;
 	protected $callablePDFDone = null;
-	public function process(WordTemplateExporter $exporter, string $batch,bool $returnFile = false)
+
+	public function preProcess(string $batch)
 	{
 		$this->batch = $batch;
 		$this->format = ExportHelper::getFormat($this->name, $this->writerType);
-		[$tmpfname, $folder] = ExportHelper::tempFileName($batch);
+		[$this->file, $this->folder] = ExportHelper::tempFileName($batch);
 
-		$this->file = $tmpfname;
 		$this->filePDF = pathinfo($this->file, PATHINFO_FILENAME).'.pdf';
+	}
 
+	public function subProcess(WordTemplateExporter $exporter, bool $returnFile = false)
+	{
 		$exporter
 			->processFile($this->export)
-			->getProcessedConvertedFile(Writer::DOCX, $tmpfname);
+			->getProcessedConvertedFile(Writer::DOCX, $this->file);
 
 		if($this->format === Writer::PDF) {
 			$this->callDone(Writer::PDF);
 			if($returnFile) {
-				return $tmpfname;
+				return $this->file;
 			}
-			return $folder;
+			return $this->folder;
 		}
 
 		$putFileAs = Storage::disk($this->disk)
-			->putFileAs($this->filePath, $tmpfname, $this->name,
+			->putFileAs($this->filePath, $this->file, $this->name,
 				$this->diskOptions);
 		if($putFileAs) {
-			unlink($tmpfname);
+			unlink($this->file);
 		}
 		$this->callDone($putFileAs);
 		return $putFileAs;
+	}
+	public function process(WordTemplateExporter $exporter, string $batch,bool $returnFile = false)
+	{
+		$this->preProcess($batch);
 
+		return $this->subProcess($exporter, $returnFile);
 	}
 
 	public function getFormat() : string
@@ -70,22 +79,31 @@ trait BatchProcessor
 		call_user_func($this->callablePDFDone, $putFileAs);
 	}
 
+	public function getFolder() : string
+	{
+		return $this->folder;
+	}
+
 	/**
 	 * Gets fired when the Templating is Done. If the Process needs to use PDF on a Batch, it will be fired before the PDF convert
-	 * @param  callable  $callable
+	 * @param  callable|null  $callable
 	 * @return void
 	 */
-	public function whenDone(callable $callable)
+	public function whenDone(?callable $callable)
 	{
 		$this->callableDone = $callable;
 	}
 
+	public function getClosures() : array
+	{
+		return [$this->callableDone, $this->callablePDFDone];
+	}
+
 	/**
-	 *
-	 * @param  callable  $callable
+	 * @param  callable|null  $callable
 	 * @return void
 	 */
-	public function whenPDFDone(callable $callable)
+	public function whenPDFDone(?callable $callable)
 	{
 		$this->callablePDFDone = $callable;
 	}
