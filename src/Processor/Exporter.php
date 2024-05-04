@@ -61,10 +61,10 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 		$returnArray = [];
 		foreach ($array as $key => $value) {
 			if (is_array($value)) {
-				$this->setArray($value, $prefix.'.'.$key);
+				$this->setArray($value, (empty($prefix) ? '' : $prefix.'.').$key);
 				continue;
 			}
-			$returnArray[$prefix.'.'.$key] = $value;
+			$returnArray[(empty($prefix) ? '' : $prefix.'.').$key] = $value;
 		}
 		$this->setArrayValues($returnArray);
 	}
