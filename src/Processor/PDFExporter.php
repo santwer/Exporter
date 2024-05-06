@@ -47,6 +47,9 @@ class PDFExporter
 		if($path !== null) {
 			//get file extension
 			$fileext = pathinfo($docX, PATHINFO_EXTENSION);
+			if (empty($fileext)) {
+				return $docX.'.pdf';
+			}
 			return Str::replace('.'.$fileext, '.pdf', $docX);
 		}
 

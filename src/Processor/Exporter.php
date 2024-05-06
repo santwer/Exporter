@@ -3,6 +3,7 @@
 namespace Santwer\Exporter\Processor;
 
 use Illuminate\Support\Str;
+use Santwer\Exporter\Writer;
 use PhpOffice\PhpWord\Element\Table;
 use Santwer\Exporter\Eloquent\Builder;
 
@@ -145,7 +146,7 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 		$templateProcessor = $this->process();
 		$savepath = $savepath ?? $this->getTempFileName('docx');
 		$templateProcessor->saveAs($savepath);
-		if ($format === 'pdf') {
+		if ($format === Writer::PDF) {
 			return PDFExporter::docxToPdf($savepath,
 				$savepath ? pathinfo($savepath,
 					PATHINFO_DIRNAME) : null);
