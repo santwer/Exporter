@@ -40,6 +40,8 @@ class ExporterProvider extends ServiceProvider
 		});
 		$this->app->alias('wordexport', WordExport::class);
 
+		$this->mergeConfigFrom(__DIR__.'/../config/exporter.php', 'exporter');
+
 	}
 
 

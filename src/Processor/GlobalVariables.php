@@ -4,7 +4,6 @@ namespace Santwer\Exporter\Processor;
 
 class GlobalVariables
 {
-    protected static $configPrefix = 'exporter';
     protected static $globalVars = [];
 
     public static function getGlobalVariables(): array
@@ -33,11 +32,6 @@ class GlobalVariables
         foreach($values as $key => $value) {
             self::setVariable($key, $value);
         }
-    }
-
-    public static function config($value, $default)
-    {
-        return config(self::$configPrefix.'.'.$value, $default);
     }
 
 }

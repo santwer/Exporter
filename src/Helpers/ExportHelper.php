@@ -59,7 +59,7 @@ class ExportHelper
 		//The converter can not handle big chunks, therefore the batch size gets reduced to 200
 		$tempDir = sys_get_temp_dir();
 		self::$subBatchCalls++;
-		if(self::$subBatchCalls > GlobalVariables::config('batch_size', 200)) {
+		if(self::$subBatchCalls > config('exporter.batch_size', 200)) {
 			self::$subBatch++;
 			self::$subBatchCalls = 1;
 		}

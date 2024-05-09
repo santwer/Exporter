@@ -112,7 +112,7 @@ trait ExportOptions
         }
 
         $this->process = new $this->processor($this->template);
-        if($this->relationsFromTemplate || $this->relationsFromTemplate === null && GlobalVariables::config('relationsFromTemplate', false)) {
+        if($this->relationsFromTemplate || $this->relationsFromTemplate === null && config('exporter.relationsFromTemplate', false)) {
             if (is_array($array = $this->process->getTemplateVariables())) {
                 $this->checkForRelations(
                     VariablesConditionProcessor::getReducedForRelations($array)
@@ -182,7 +182,7 @@ trait ExportOptions
 
     public function checkForRelations(array $relations)
     {
-        $deleteRelations = GlobalVariables::config('removeRelations', true);
+        $deleteRelations = config('exporter.removeRelations', true);
         if($deleteRelations) {
             $eagerLoads = $this->getEagerLoads();
 
