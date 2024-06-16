@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use Santwer\Exporter\Writer;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Santwer\Exporter\Processor\PDFExporter;
 use Santwer\Exporter\Processor\GlobalVariables;
 use Santwer\Exporter\Exceptions\TempFolderException;
@@ -48,6 +49,73 @@ class ExportHelper
 		return self::getFormat($fileName, $ext);
 	}
 
+	public static function tempFile(?string $dir = null)
+	{
+		if(config('exporter.temp_folder_relative')) {
+			$filename = 'php_we'.ExportHelper::generateRandomString().'.tmp';
+			if ($dir) {
+				return $dir.DIRECTORY_SEPARATOR.$filename;
+			}
+			return ExportHelper::tempDir().DIRECTORY_SEPARATOR.$filename;
+
+		}
+		if ($dir) {
+			return tempnam($dir, "php_we");
+		}
+		return tempnam(ExportHelper::tempDir(), "php_we");
+	}
+
+	public static function isPathAbsolute(string $path) : bool
+	{
+		return Str::startsWith($path, ['/', '\\',
+									   'C:', 'D:', 'E:', 'F:', 'G:', 'H:', 'I:', 'J:', 'K:', 'L:', 'M:', 'N:', 'O:', 'P:', 'Q:', 'R:', 'S:',
+									   'T:', 'U:', 'V:', 'W:', 'X:', 'Y:', 'Z:']);
+	}
+	public static function tempDir() : string
+	{
+		//create all folders in path if not exists
+		$path = config('exporter.temp_folder');
+		//explode String with DIRECTORY_SEPARATOR and / or \
+		$pathParts = preg_split('/[\/\\\\]/', $path);
+		$folderPath = '';
+
+		foreach ( $pathParts as $folder) {
+			if (empty($folder)) {
+				continue;
+			}
+			if (Str::contains($folder, ':')) {
+				$folderPath = $folder;
+			} elseif(empty($folderPath)) {
+				$folderPath = $folder;
+			} else {
+				$folderPath = $folderPath.DIRECTORY_SEPARATOR.$folder;
+			}
+
+			if (!is_dir($folderPath)) {
+				if (!mkdir($folderPath, 0700)) {
+					throw new TempFolderException('Folder couldn\'t be created');
+				}
+			}
+		}
+
+		return $path;
+	}
+
+	public static function convertForRunningInConsole(string $path) : string
+	{
+		if (self::isPathAbsolute($path)) {
+			return $path;
+		}
+		if(Str::startsWith($path, '/')) {
+			return $path;
+		}
+		if(app()->runningInConsole()) {
+			return $path;
+		}
+		return '..'.DIRECTORY_SEPARATOR.$path;
+
+	}
+
 	/**
 	 * @param  string  $prefix
 	 * @return string
@@ -57,7 +125,7 @@ class ExportHelper
 	{
 		//Based on https://wiki.documentfoundation.org/Faq/General/150
 		//The converter can not handle big chunks, therefore the batch size gets reduced to 200
-		$tempDir = sys_get_temp_dir();
+		$tempDir = ExportHelper::tempDir();
 		self::$subBatchCalls++;
 		if(self::$subBatchCalls > config('exporter.batch_size', 200)) {
 			self::$subBatch++;

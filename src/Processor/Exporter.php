@@ -6,6 +6,7 @@ use Illuminate\Support\Str;
 use Santwer\Exporter\Writer;
 use PhpOffice\PhpWord\Element\Table;
 use Santwer\Exporter\Eloquent\Builder;
+use Santwer\Exporter\Helpers\ExportHelper;
 
 class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 {
@@ -145,7 +146,10 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 	{
 		$templateProcessor = $this->process();
 		$savepath = $savepath ?? $this->getTempFileName('docx');
-		$templateProcessor->saveAs($savepath);
+
+		$templateProcessor->saveAs(
+			ExportHelper::convertForRunningInConsole($savepath)
+		);
 		if ($format === Writer::PDF) {
 			return PDFExporter::docxToPdf($savepath,
 				$savepath ? pathinfo($savepath,
@@ -157,7 +161,7 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 					PATHINFO_DIRNAME) : null);
 		}
 
-		return $savepath;
+		return ExportHelper::convertForRunningInConsole($savepath);
 	}
 
 	private function getTemplateProcessor(): TemplateProcessor
@@ -317,7 +321,7 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 			$temp = tempnam('', 'Exp');
 			$temp = pathinfo($temp, PATHINFO_BASENAME);
 		} else {
-			$temp = tempnam(sys_get_temp_dir(), 'Exp');
+			$temp = ExportHelper::tempFile();
 		}
 		if (null === $ext) {
 			return $temp;

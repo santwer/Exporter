@@ -4,6 +4,7 @@ namespace Santwer\Exporter\Processor;
 
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Process;
+use Santwer\Exporter\Helpers\ExportHelper;
 
 class PDFExporter
 {
@@ -12,7 +13,7 @@ class PDFExporter
 
 	public static function html2Pdf(string $html, ?string $path = null)
 	{
-		$htmlfile = tempnam(sys_get_temp_dir(), 'php_we_pdf');
+		$htmlfile = ExportHelper::tempFile();
 
 		$handler = fopen($htmlfile, "w");
 		fwrite($handler, $html);
@@ -42,17 +43,19 @@ class PDFExporter
 		if(!self::checkReturnValue($return)) {
 			throw new \Exception($return);
 		}
+
 		if ($path !== null) {
 			//get file extension
 			$fileext = pathinfo($docX, PATHINFO_EXTENSION);
 			if (empty($fileext)) {
-				return $docX.'.pdf';
+				$file = $docX.'.pdf';
+			} else {
+				$file = Str::replace('.'.$fileext, '.pdf', $docX);
 			}
-
-			return Str::replace('.'.$fileext, '.pdf', $docX);
+			return  ExportHelper::convertForRunningInConsole($file);
 		}
-
-		return $path.pathinfo($docX, PATHINFO_FILENAME).'.pdf';
+		$file = $path.pathinfo($docX, PATHINFO_FILENAME).'.pdf';
+		return ExportHelper::convertForRunningInConsole($file);
 	}
 
 	private static function cmdToString(array $array) : string
@@ -75,14 +78,15 @@ class PDFExporter
 
 		$collection = collect(explode(' ', self::commands($type)));
 		$partIndex = 0;
+
 		foreach ($collection as $index => $commandPart) {
 			if($index === 0 && !empty(config('exporter.word2pdf.soffice_prefix'))) {
 				$collection[$index] = config('exporter.word2pdf.soffice_prefix').$commandPart;
 			}
 
-			if ($commandPart === '?' || $commandPart === '"%s"' || $commandPart === '%s') {
+			if (Str::contains($commandPart, ['?','%s', '"%s"'])) {
 				if (isset($args[$partIndex])) {
-					$collection[$index] = $args[$partIndex];
+					$collection[$index] = Str::replace(['?','%s', '"%s"'], $args[$partIndex], $collection[$index]);
 				}
 				$partIndex++;
 			}

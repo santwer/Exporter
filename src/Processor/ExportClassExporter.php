@@ -35,7 +35,7 @@ class ExportClassExporter
 		string $writerType = null,
 		array  $headers = []
 	): BinaryFileResponse {
-		$tmpfname = tempnam(sys_get_temp_dir(), "php_we");
+		$tmpfname = ExportHelper::tempFile();
 
 		$format = ExportHelper::getFormat($fileName, $writerType);
 
@@ -73,7 +73,7 @@ class ExportClassExporter
 		array  $diskOptions = []
 	) {
 		$format = ExportHelper::getFormat($filePath, $writerType);
-		$tmpfname = tempnam(sys_get_temp_dir(), "php_we");
+		$tmpfname = ExportHelper::tempFile();
 		$file = $this->exporter
 			->processFile($export)
 			->getProcessedConvertedFile($format, $tmpfname);
@@ -95,7 +95,7 @@ class ExportClassExporter
 		array  $diskOptions = []
 	) {
 		$format = ExportHelper::getFormat($name, $writerType);
-		$tmpfname = tempnam(sys_get_temp_dir(), "php_we");
+		$tmpfname = ExportHelper::tempFile();
 		$file = $this->exporter
 			->processFile($export)
 			->getProcessedConvertedFile($format, $tmpfname);
