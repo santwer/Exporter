@@ -2,10 +2,26 @@
 
 namespace Santwer\Exporter\Processor;
 
+use Illuminate\Support\Str;
 use PhpOffice\PhpWord\Shared\Text;
 
 class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 {
+
+	public function setValue(
+		$search,
+		$replace,
+		$limit = \PhpOffice\PhpWord\TemplateProcessor::MAXIMUM_REPLACEMENTS_DEFAULT
+	): void {
+
+		$replace = Str::replaceMatches(['/&(?![a-zA-Z0-9]+;)/'], '&amp;', $replace);
+		if ($search !== 'new_page') {
+			$replace = Str::replace(['<'], '&lt;', $replace);
+			$replace = Str::replace(['>'], '&gt;', $replace);
+		}
+		parent::setValue($search, $replace, $limit);
+	}
+
 
 	/**
 	 * @param ?string $subject
