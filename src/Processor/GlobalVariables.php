@@ -10,7 +10,7 @@ class GlobalVariables
     {
         $vars = [
 
-            __('new_page') => '<w:p><w:r><w:br w:type="page"/></w:r></w:p>',
+            __('new_page') => ['<w:p><w:r><w:br w:type="page"/></w:r></w:p>', true],
 
         ];
 

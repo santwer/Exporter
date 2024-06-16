@@ -11,11 +11,15 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 	public function setValue(
 		$search,
 		$replace,
-		$limit = \PhpOffice\PhpWord\TemplateProcessor::MAXIMUM_REPLACEMENTS_DEFAULT
+		$limit = \PhpOffice\PhpWord\TemplateProcessor::MAXIMUM_REPLACEMENTS_DEFAULT,
+		bool $allowTags = false
 	): void {
+		if(is_array($replace)) {
+			[$replace, $allowTags] = array_pad($replace, 2, false);
+		}
 
 		$replace = Str::replaceMatches(['/&(?![a-zA-Z0-9]+;)/'], '&amp;', $replace);
-		if ($search !== 'new_page') {
+		if (!$allowTags) {
 			$replace = Str::replace(['<'], '&lt;', $replace);
 			$replace = Str::replace(['>'], '&gt;', $replace);
 		}
