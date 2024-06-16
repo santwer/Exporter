@@ -2,6 +2,7 @@
 
 namespace Santwer\Exporter\Processor;
 
+use Illuminate\Support\Str;
 use Santwer\Exporter\Writer;
 use Santwer\Exporter\Jobs\WordToPDF;
 use Illuminate\Support\Facades\Storage;
@@ -57,7 +58,7 @@ class ExportClassExporter
 
 	/**
 	 * @param  object       $export
-	 * @param  string       $filePath
+	 * @param  string       $folderPath
 	 * @param  string|null  $disk
 	 * @param  string|null  $writerType
 	 * @param  array        $diskOptions
@@ -67,12 +68,26 @@ class ExportClassExporter
 	 */
 	public function store(
 		object $export,
-		string $filePath,
+		string $folderPath,
 		string $disk = null,
 		string $writerType = null,
 		array  $diskOptions = []
 	) {
-		$format = ExportHelper::getFormat($filePath, $writerType);
+		if(ExportHelper::hasSupportedFormats($folderPath)) {
+			$fileName = pathinfo($folderPath, PATHINFO_FILENAME)
+				.'.'.pathinfo($folderPath, PATHINFO_EXTENSION);
+			return self::storeAs(
+				$export,
+				Str::replace($fileName, '', $folderPath),
+				$fileName,
+				$disk,
+				$writerType,
+				$diskOptions
+			);
+		}
+
+		$format = ExportHelper::getFormat($folderPath, $writerType);
+
 		$tmpfname = ExportHelper::tempFile();
 		$file = $this->exporter
 			->processFile($export)
@@ -82,7 +97,7 @@ class ExportClassExporter
 		}
 
 		return Storage::disk($disk)
-			->putFile($filePath, $tmpfname,
+			->putFile($folderPath, $tmpfname,
 				$diskOptions);
 	}
 
@@ -99,13 +114,13 @@ class ExportClassExporter
 		$file = $this->exporter
 			->processFile($export)
 			->getProcessedConvertedFile($format, $tmpfname);
+
 		if ($format === Writer::PDF) {
 			$tmpfname = $file;
 		}
 
 		return Storage::disk($disk)
-			->putFileAs($filePath, $tmpfname, $name,
-				$diskOptions);
+			->putFileAs($filePath, $tmpfname, $name, $diskOptions);
 	}
 
 	/**

@@ -49,6 +49,12 @@ class ExportHelper
 		return self::getFormat($fileName, $ext);
 	}
 
+	public static function hasSupportedFormats(string $fileName) : bool
+	{
+		$ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+		return in_array($ext, Writer::formats());
+	}
+
 	public static function tempFile(?string $dir = null)
 	{
 		if(config('exporter.temp_folder_relative')) {
