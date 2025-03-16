@@ -291,12 +291,14 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 		$variables = $this->getTemplateVariables();
 		foreach ($variables as $variable) {
 			[$sp] = explode('.', $variable);
+
 			if (
 				in_array('/'.$sp, $variables)
 				|| Str::contains(':', $variable) || Str::startsWith($variable, '/')) {
 				continue;
 			} else {
 				foreach ($blocks as $b => $block) {
+					$blocks[$b] = $this->templateProcessor->arrayListRecusive($block);
 					foreach ($block as $e => $entry) {
 						if (isset($entry[$variable])) {
 							continue;
