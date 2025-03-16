@@ -164,7 +164,7 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 		return ExportHelper::convertForRunningInConsole($savepath);
 	}
 
-	private function getTemplateProcessor(): TemplateProcessor
+	public function getTemplateProcessor(): TemplateProcessor
 	{
 		if (null === $this->templateProcessor) {
 			$this->templateProcessor = new TemplateProcessor($this->wordfile);
