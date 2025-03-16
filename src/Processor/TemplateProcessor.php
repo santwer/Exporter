@@ -19,7 +19,11 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 			[$replace, $allowTags] = array_pad($replace, 2, false);
 		}
 
-		$replace = Str::replaceMatches(['/&(?![a-zA-Z0-9]+;)/'], '&amp;', $replace);
+		if(method_exists(Str::class, 'replaceMatches')) {
+			$replace = Str::replaceMatches(['/&(?![a-zA-Z0-9]+;)/'], '&amp;', $replace);
+		} else {
+			$replace = Str::replace(['/&(?![a-zA-Z0-9]+;)/'], '&amp;', $replace);
+		}
 		if (!$allowTags) {
 			$replace = Str::replace(['<'], '&lt;', $replace);
 			$replace = Str::replace(['>'], '&gt;', $replace);

@@ -2,6 +2,7 @@
 
 namespace Santwer\Exporter\Processor;
 
+use Illuminate\Support\Collection;
 use Santwer\Exporter\Concerns\WithCharts;
 use Santwer\Exporter\Concerns\WithImages;
 use Santwer\Exporter\Concerns\WithTables;
@@ -49,7 +50,17 @@ class WordTemplateExporter
 	private function setValues(Exporter $exporter): void
 	{
 		if ($this->hasConcern(TokensFromCollection::class) || $this->hasConcern(TokensFromArray::class)) {
-			$exporter->setBlockValues($this->export->blockName(), $this->formatData());
+			$blockNames = $this->export->blockName();
+			if(!is_array($blockNames)) {
+				$blockNames = [$blockNames];
+			}
+			foreach ($blockNames as $blockName) {
+				$data = isset($this->formatData()[$blockName]) ? $this->formatData()[$blockName] : $this->formatData();
+				if($data instanceof Collection) {
+					$data = $data->toArray();
+				}
+				$exporter->setBlockValues($blockName, $data);
+			}
 		}
 
 		if ($this->hasConcern(TokensArray::class)) {
