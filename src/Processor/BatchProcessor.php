@@ -6,6 +6,8 @@ use Illuminate\Support\Str;
 use Santwer\Exporter\Writer;
 use Illuminate\Support\Facades\Storage;
 use Santwer\Exporter\Helpers\ExportHelper;
+use Illuminate\Contracts\Queue\ShouldQueue;
+
 
 trait BatchProcessor
 {
@@ -86,10 +88,10 @@ trait BatchProcessor
 
 	/**
 	 * Gets fired when the Templating is Done. If the Process needs to use PDF on a Batch, it will be fired before the PDF convert
-	 * @param  callable|null  $callable
+	 * @param  callable|null|ShouldQueue  $callable
 	 * @return void
 	 */
-	public function whenDone(?callable $callable)
+	public function whenDone(null|callable|ShouldQueue $callable)
 	{
 		$this->callableDone = $callable;
 	}
@@ -100,10 +102,10 @@ trait BatchProcessor
 	}
 
 	/**
-	 * @param  callable|null  $callable
+	 * @param  callable|null|ShouldQueue  $callable
 	 * @return void
 	 */
-	public function whenPDFDone(?callable $callable)
+	public function whenPDFDone(null|callable|ShouldQueue $callable)
 	{
 		$this->callablePDFDone = $callable;
 	}
