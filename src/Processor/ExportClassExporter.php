@@ -9,6 +9,7 @@ use Santwer\Exporter\Jobs\WordToPDF;
 use Illuminate\Support\Facades\Storage;
 use Santwer\Exporter\Helpers\ExportHelper;
 use Santwer\Exporter\Jobs\WordProcessorJob;
+use Illuminate\Foundation\Bus\PendingChain;
 use Santwer\Exporter\Exportables\Exportable;
 use Illuminate\Foundation\Bus\PendingDispatch;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -145,14 +146,20 @@ class ExportClassExporter
 		return true;
 	}
 
+	/**
+	 * @param  Exportable  ...$exports
+	 */
+	public function batchQueue(Exportable ...$exports)
+	{
+		return $this->batch(...$exports)->dispatch();
+	}
 
 	/**
 	 * @param  Exportable  ...$exports
-	 * @return \Illuminate\Foundation\Bus\PendingChain
+	 * @return PendingChain
 	 */
-	public function batchQueue(Exportable ...$exports): \Illuminate\Foundation\Bus\PendingChain
+	public function batch(Exportable ...$exports) : PendingChain
 	{
-
 		$batch = ExportHelper::generateRandomString();
 		$pending = [];
 		foreach ($exports as $export) {
