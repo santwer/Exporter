@@ -17,6 +17,7 @@ trait BatchProcessor
 	protected ?string $filePDF = null;
 	protected string $format = '';
 	protected string $folder = '';
+	protected string $subBatch = '';
 	protected $callableDone = null;
 	protected $callablePDFDone = null;
 
@@ -24,7 +25,7 @@ trait BatchProcessor
 	{
 		$this->batch = $batch;
 		$this->format = ExportHelper::getFormat($this->name, $this->writerType);
-		[$this->file, $this->folder] = ExportHelper::tempFileName($batch);
+		[$this->file, $this->folder, $this->subBatch] = ExportHelper::tempFileName($batch);
 
 		$this->filePDF = pathinfo($this->file, PATHINFO_FILENAME).'.pdf';
 	}
@@ -87,6 +88,11 @@ trait BatchProcessor
 		return $this->folder;
 	}
 
+	public function getSubBatch() : string
+	{
+		return $this->subBatch;
+	}
+
 	/**
 	 * Gets fired when the Templating is Done. If the Process needs to use PDF on a Batch, it will be fired before the PDF convert
 	 * @param  callable|null|object|string  $callable
@@ -137,14 +143,16 @@ trait BatchProcessor
 	 * @param  array  $files
 	 * @return false|string
 	 */
-	public function copyOwnFileOfArray(array $files)
+	public function copyOwnFileOfArray(array $files, bool $withDone = true)
 	{
 		foreach ($files as $file) {
 			if(Str::contains($file, $this->filePDF)) {
 				$putFileAs = Storage::disk($this->disk)
 					->putFileAs($this->filePath, $file, $this->name,
 						$this->diskOptions);
-				$this->callPDFDone($putFileAs);
+				if ($withDone) {
+					$this->callPDFDone($putFileAs);
+				}
 				return $putFileAs;
 			}
 		}

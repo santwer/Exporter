@@ -153,7 +153,7 @@ class ExportHelper
 			}
 		}
 
-		return [tempnam($batchNameFolder, "php_we"), $newTempDir];
+		return [tempnam($batchNameFolder, "php_we"), $newTempDir, $batchName];
 	}
 
 	/**
@@ -163,21 +163,35 @@ class ExportHelper
 	 */
 	public static function processWordToPdf(string $folder) : array
 	{
-		$dirs = new DirectoryIterator($folder);
 		$files = [];
+		foreach (self::getSubDirs($folder) as $dir) {
+			$files = array_merge($files, self::processWordToPdfFolder($folder.DIRECTORY_SEPARATOR.$dir->getFilename()));
+		}
+		self::garbageCollector($folder);
+		return $files;
+	}
+
+	public static function processWordToPdfFolder($subfolder)
+	{
+		PDFExporter::docxToPdf($subfolder.DIRECTORY_SEPARATOR.'*', $subfolder);
+		$subFiles = glob($subfolder .DIRECTORY_SEPARATOR. '*.pdf');
+		if(false !== $subFiles) {
+			return $subFiles;
+		}
+		return [];
+	}
+
+	public static function getSubDirs(string $folder)
+	{
+		$dirs = new DirectoryIterator($folder);
 		foreach ($dirs as $dir) {
 			if($dir->isDot()) continue;
 			if ($dir->isDir()) {
 				$subfolder = $folder.DIRECTORY_SEPARATOR.$dir->getFilename();
-				PDFExporter::docxToPdf($subfolder.DIRECTORY_SEPARATOR.'*', $subfolder);
-				$subFiles = glob($subfolder .DIRECTORY_SEPARATOR. '*.pdf');
-				if(false !== $subFiles) {
-					$files = array_merge($files, $subFiles);
-				}
+				yield $subfolder;
 			}
 		}
-		self::garbageCollector($folder);
-		return $files;
+		return [];
 	}
 
 	public static function garbageCollector(string $folder)

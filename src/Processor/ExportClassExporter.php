@@ -156,29 +156,55 @@ class ExportClassExporter
 
 	/**
 	 * @param  Exportable  ...$exports
-	 * @return PendingChain
+	 * @return ...PendingChain
 	 */
 	public function batch(Exportable ...$exports) : PendingChain
 	{
 		$batch = ExportHelper::generateRandomString();
+		$hasPDF = false;
+		$folder = null;
 		$pending = [];
+		$pdfDones = [];
 		foreach ($exports as $export) {
 			[$callableDone, $callablePDFDone] = $export->getClosures();
 			$export->whenPDFDone(null);
 			$export->whenDone(null);
 			$export->preProcess($batch);
+			$folder = $export->getFolder();
+			$subBatch = $export->getSubBatch();
 
 			$pending[] = new WordProcessorJob($this->exporter, $export);
+
 			if ($callableDone) {
 				$pending[] = $callableDone;
 			}
 			if ($export->getFormat() === Writer::PDF) {
-				$pending[] = new WordToPDF($export);
-				if ($callablePDFDone) {
-					$pending[] = $callablePDFDone;
+				$hasPDF = true;
+				if(!isset($pdfDones[$subBatch])) {
+					$pdfDones[$subBatch] = [];
 				}
+				$pdfDones[$subBatch][] = $callablePDFDone;
 			}
 		}
+		if($hasPDF) {
+			foreach (ExportHelper::getSubDirs($folder) as $directory) {
+				$pending[] = function () use ($exports, $directory) {
+					$files = ExportHelper::processWordToPdfFolder($directory);
+					foreach ($exports as $export) {
+						$export->copyOwnFileOfArray($files, false);
+					}
+					ExportHelper::garbageCollector($directory);
+					ExportHelper::cleanGarbage();
+				};
+				//get current direcotory name
+				$currentFolder = basename($directory);
+				if(isset($pdfDones[$currentFolder])) {
+					$pending = array_merge($pending, $pdfDones[$currentFolder]);
+				}
+			}
+
+		}
+
 
 		return Bus::chain($pending);
 	}
