@@ -151,14 +151,14 @@ class ExportClassExporter
 	 */
 	public function batchQueue(Exportable ...$exports)
 	{
-		return $this->batch(...$exports)->dispatch();
+		return array_map(fn($x) => $x->dispatch(), $this->batch(...$exports));
 	}
 
 	/**
 	 * @param  Exportable  ...$exports
 	 * @return ...PendingChain
 	 */
-	public function batch(Exportable ...$exports) : PendingChain
+	public function batch(Exportable ...$exports) : array
 	{
 		$batch = ExportHelper::generateRandomString();
 		$hasPDF = false;
@@ -172,8 +172,10 @@ class ExportClassExporter
 			$export->preProcess($batch);
 			$folder = $export->getFolder();
 			$subBatch = $export->getSubBatch();
-
-			$pending[] = new WordProcessorJob($this->exporter, $export);
+			if(!isset($pending[$subBatch])) {
+				$pending[$subBatch] = [];
+			}
+			$pending[$subBatch][] = new WordProcessorJob($this->exporter, $export);
 
 			if ($callableDone) {
 				$pending[] = $callableDone;
@@ -188,7 +190,9 @@ class ExportClassExporter
 		}
 		if($hasPDF) {
 			foreach (ExportHelper::getSubDirs($folder) as $directory) {
-				$pending[] = function () use ($exports, $directory) {
+				//get current direcotory name
+				$currentFolder = basename($directory);
+				$pending[$currentFolder][] = function () use ($exports, $directory,$currentFolder) {
 					$files = ExportHelper::processWordToPdfFolder($directory);
 					foreach ($exports as $export) {
 						$export->copyOwnFileOfArray($files, false);
@@ -196,17 +200,16 @@ class ExportClassExporter
 					ExportHelper::garbageCollector($directory);
 					ExportHelper::cleanGarbage();
 				};
-				//get current direcotory name
-				$currentFolder = basename($directory);
+
 				if(isset($pdfDones[$currentFolder])) {
-					$pending = array_merge($pending, $pdfDones[$currentFolder]);
+					$pending[$currentFolder] = array_merge($pending[$currentFolder], $pdfDones[$currentFolder]);
 				}
 			}
 
 		}
 
 
-		return Bus::chain($pending);
+		return collect($pending)->map(fn($x) => Bus::chain($x))->toArray();
 	}
 
 
