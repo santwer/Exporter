@@ -4,9 +4,10 @@ namespace Santwer\Exporter\Processor;
 
 use Illuminate\Support\Str;
 use Santwer\Exporter\Writer;
+use Illuminate\Bus\Queueable;
 use Illuminate\Support\Facades\Storage;
 use Santwer\Exporter\Helpers\ExportHelper;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Events\Dispatchable;
 
 
 trait BatchProcessor
@@ -88,11 +89,20 @@ trait BatchProcessor
 
 	/**
 	 * Gets fired when the Templating is Done. If the Process needs to use PDF on a Batch, it will be fired before the PDF convert
-	 * @param  callable|null|ShouldQueue  $callable
+	 * @param  callable|null|object  $callable
 	 * @return void
 	 */
-	public function whenDone(null|callable|ShouldQueue $callable)
+	public function whenDone(null|callable|object $callable)
 	{
+		if (
+			is_object($callable)
+			&& !is_callable($callable)
+			&& !in_array(Queueable::class, class_uses_recursive($callable))
+			&& in_array(Dispatchable::class, class_uses_recursive($callable))
+		) {
+			$callable = fn () => $callable->dispatch();
+		}
+
 		$this->callableDone = $callable;
 	}
 
@@ -102,11 +112,19 @@ trait BatchProcessor
 	}
 
 	/**
-	 * @param  callable|null|ShouldQueue  $callable
+	 * @param  callable|null|object  $callable
 	 * @return void
 	 */
-	public function whenPDFDone(null|callable|ShouldQueue $callable)
+	public function whenPDFDone(null|callable|object $callable)
 	{
+		if (
+			is_object($callable)
+			&& !is_callable($callable)
+			&& !in_array(Queueable::class, class_uses_recursive($callable))
+			&& in_array(Dispatchable::class, class_uses_recursive($callable))
+		) {
+			$callable = fn () => $callable->dispatch();
+		}
 		$this->callablePDFDone = $callable;
 	}
 
