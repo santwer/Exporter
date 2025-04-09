@@ -92,13 +92,18 @@ trait BatchProcessor
 	 * @param  callable|null|object  $callable
 	 * @return void
 	 */
-	public function whenDone(callable|string|null $callable, ...$args)
+	public function whenDone(null|callable|object $callable)
 	{
-		if (is_callable($callable)) {
-			$this->callableDone = $callable;
-		} else {
-			$this->callableDone = [$callable, $args];
+		if (
+			is_object($callable)
+			&& !is_callable($callable)
+			&& !in_array(Queueable::class, class_uses_recursive($callable))
+			&& in_array(Dispatchable::class, class_uses_recursive($callable))
+		) {
+			$callable = fn () => $callable->dispatch();
 		}
+
+		$this->callableDone = $callable;
 	}
 
 	public function getClosures() : array
@@ -107,16 +112,20 @@ trait BatchProcessor
 	}
 
 	/**
-	 * @param  callable|string|null  $callable
+	 * @param  callable|null|object  $callable
 	 * @return void
 	 */
-	public function whenPDFDone(callable|string|null $callable, ...$args)
+	public function whenPDFDone(null|callable|object $callable)
 	{
-		if (is_callable($callable)) {
-			$this->callablePDFDone = $callable;
-		} else {
-			$this->callablePDFDone = [$callable, $args];
+		if (
+			is_object($callable)
+			&& !is_callable($callable)
+			&& !in_array(Queueable::class, class_uses_recursive($callable))
+			&& in_array(Dispatchable::class, class_uses_recursive($callable))
+		) {
+			$callable = fn () => $callable->dispatch();
 		}
+		$this->callablePDFDone = $callable;
 	}
 
 	/**
