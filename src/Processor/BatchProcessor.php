@@ -89,10 +89,10 @@ trait BatchProcessor
 
 	/**
 	 * Gets fired when the Templating is Done. If the Process needs to use PDF on a Batch, it will be fired before the PDF convert
-	 * @param  callable|null|object  $callable
+	 * @param  callable|null|object|string  $callable
 	 * @return void
 	 */
-	public function whenDone(null|callable|object $callable)
+	public function whenDone(null|callable|object|string $callable, ...$args)
 	{
 		if (
 			is_object($callable)
@@ -102,7 +102,9 @@ trait BatchProcessor
 		) {
 			$callable = fn () => $callable->dispatch();
 		}
-
+		if(is_string($callable)) {
+			$callable = fn () => call_user_func_array([$callable, 'dispatch'], $args);
+		}
 		$this->callableDone = $callable;
 	}
 
@@ -112,10 +114,10 @@ trait BatchProcessor
 	}
 
 	/**
-	 * @param  callable|null|object  $callable
+	 * @param  callable|null|object|string $callable
 	 * @return void
 	 */
-	public function whenPDFDone(null|callable|object $callable)
+	public function whenPDFDone(null|callable|object|string $callable, ...$args)
 	{
 		if (
 			is_object($callable)
@@ -124,6 +126,9 @@ trait BatchProcessor
 			&& in_array(Dispatchable::class, class_uses_recursive($callable))
 		) {
 			$callable = fn () => $callable->dispatch();
+		}
+		if(is_string($callable)) {
+			$callable = fn () => call_user_func_array([$callable, 'dispatch'], $args);
 		}
 		$this->callablePDFDone = $callable;
 	}
