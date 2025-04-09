@@ -149,9 +149,40 @@ class ExportClassExporter
 	/**
 	 * @param  Exportable  ...$exports
 	 */
-	public function batchQueue(Exportable ...$exports)
+	public function batchQueue(Exportable ...$exports): array
 	{
-		return $this->batch(...$exports)->dispatch();
+		$pending = [];
+		$batch = ExportHelper::generateRandomString();
+		foreach ($exports as $export) {
+			[$callableDone, $callablePDFDone] = $export->getClosures();
+			$export->whenPDFDone(null);
+			$export->whenDone(null);
+			$export->preProcess($batch);
+			$pending[] = WordProcessorJob::dispatch($this->exporter, $export);
+			if ($callableDone) {
+				if (is_callable($callableDone)) {
+					$pending[] = dispatch(function () use ($callableDone) {
+						call_user_func($callableDone, null);
+					});
+				} else {
+					$pending[] = $callableDone[0]::dispatch(...$callableDone[1]);
+				}
+			}
+			if ($export->getFormat() === Writer::PDF) {
+				$pending[] = WordToPDF::dispatch($export);
+				if ($callablePDFDone) {
+					if (is_callable($callablePDFDone)) {
+						$pending[] = dispatch(function () use ($callablePDFDone) {
+							call_user_func($callablePDFDone, null);
+						});
+					} else {
+						$pending[] = $callablePDFDone[0]::dispatch(...$callablePDFDone[1]);
+					}
+				}
+			}
+		}
+
+		return $pending;
 	}
 
 	/**
