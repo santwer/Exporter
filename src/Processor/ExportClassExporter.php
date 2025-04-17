@@ -209,7 +209,10 @@ class ExportClassExporter
 		}
 
 
-		return collect($pending)->map(fn($x) => Bus::chain($x))->toArray();
+		return collect($pending)
+			->filter()
+			->map(fn(array $x) => Bus::chain(collect($x)->filter()->toArray()))
+			->toArray();
 	}
 
 

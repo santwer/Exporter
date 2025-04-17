@@ -165,7 +165,11 @@ class ExportHelper
 	{
 		$files = [];
 		foreach (self::getSubDirs($folder) as $dir) {
-			$files = array_merge($files, self::processWordToPdfFolder($folder.DIRECTORY_SEPARATOR.$dir->getFilename()));
+			if(is_string($dir)) {
+				$files = array_merge($files, self::processWordToPdfFolder($dir));
+			} else {
+				$files = array_merge($files, self::processWordToPdfFolder($folder.DIRECTORY_SEPARATOR.$dir->getFilename()));
+			}
 		}
 		self::garbageCollector($folder);
 		return $files;
