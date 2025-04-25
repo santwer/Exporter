@@ -178,7 +178,7 @@ class ExportClassExporter
 			$pending[$subBatch][] = new WordProcessorJob($this->exporter, $export);
 
 			if ($callableDone) {
-				$pending[] = $callableDone;
+				$pending[$subBatch][] = $callableDone;
 			}
 			if ($export->getFormat() === Writer::PDF) {
 				$hasPDF = true;
@@ -207,7 +207,6 @@ class ExportClassExporter
 			}
 
 		}
-
 
 		return collect($pending)
 			->filter()
