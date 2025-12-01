@@ -22,7 +22,7 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 		if(method_exists(Str::class, 'replaceMatches')) {
 			$replace = Str::replaceMatches(['/&(?![a-zA-Z0-9]+;)/'], '&amp;', $replace);
 		} else {
-			$replace = Str::replace(['/&(?![a-zA-Z0-9]+;)/'], '&amp;', $replace);
+			$replace = preg_replace('/&(?![a-zA-Z0-9]+;)/', '&amp;', $replace);
 		}
 		if (!$allowTags) {
 			$replace = Str::replace(['<'], '&lt;', $replace);
