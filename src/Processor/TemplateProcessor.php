@@ -15,6 +15,12 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 		$limit = \PhpOffice\PhpWord\TemplateProcessor::MAXIMUM_REPLACEMENTS_DEFAULT,
 		bool $allowTags = false
 	): void {
+		parent::setValue($search, $this->replace($replace, $allowTags), $limit);
+	}
+
+
+	protected function replace($replace, bool $allowTags = false)
+	{
 		if (is_array($replace)) {
 			[$replace, $allowTags] = array_pad($replace, 2, false);
 		}
@@ -28,9 +34,8 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 			$replace = Str::replace(['<'], '&lt;', $replace);
 			$replace = Str::replace(['>'], '&gt;', $replace);
 		}
-		parent::setValue($search, $replace, $limit);
+		return $replace;
 	}
-
 
 	/**
 	 * @param ?string  $subject
@@ -133,8 +138,9 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 						return !is_array($y);
 					});
 				}, $variableReplacements);
+				$t = collect($variableReplacementsFirst)->map(fn ($a) => collect($a)->map(fn($v) => $this->replace($v))->toArray())->toArray();
 
-				$cloned = $this->replaceClonedVariables($variableReplacementsFirst, $xmlBlock);
+				$cloned = $this->replaceClonedVariables($t, $xmlBlock);
 
 				$variableReplacementsRecrusive = array_map(function ($x) {
 					return array_filter($x, function ($y) {
