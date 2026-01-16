@@ -19,7 +19,7 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 	}
 
 
-	protected function replace($replace, bool $allowTags = false)
+	public function replace($replace, bool $allowTags = false)
 	{
 		if (is_array($replace)) {
 			[$replace, $allowTags] = array_pad($replace, 2, false);
