@@ -134,11 +134,15 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 				$cloned = $this->indexClonedVariables($clones, $xmlBlock);
 			} elseif ($variableReplacements !== null && is_array($variableReplacements)) {
 				$variableReplacementsFirst = array_map(function ($x) {
-					return array_filter($x, function ($y) {
-						return !is_array($y);
-					});
+					return $x;
 				}, $variableReplacements);
-				$t = collect($variableReplacementsFirst)->map(fn ($a) => collect($a)->map(fn($v) => $this->replace($v))->toArray())->toArray();
+
+				$t = collect($variableReplacementsFirst)->map(fn ($a) => collect($a)->map(function ($x) {
+					if(is_array($x)) {
+						return $this->replace(...$x);
+					}
+					return $this->replace($x);
+				})->toArray())->toArray();
 
 				$cloned = $this->replaceClonedVariables($t, $xmlBlock);
 
