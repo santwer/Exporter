@@ -9,6 +9,12 @@ use Santwer\Exporter\Exceptions\NoFileException;
 use Santwer\Exporter\Traits\BuilderExportPdf;
 use Santwer\Exporter\Traits\ExportOptions;
 
+/**
+ * Query-based export builder. Will be removed in a future version.
+ *
+ * @deprecated Query-based export; will be removed in a future version.
+ *             Use export classes (FromWordTemplate) and WordExport::download/store instead.
+ */
 class Builder extends EloquentBuilder
 {
     use ExportOptions, BuilderExportPdf, ExportDebug;
@@ -20,6 +26,7 @@ class Builder extends EloquentBuilder
      * @param  array        $options
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|null
      * @throws NoFileException
+     * @deprecated Query-based export; will be removed. Use export classes (FromWordTemplate) instead.
      */
     public function export($name = null, array $options = [])
     {
@@ -50,6 +57,7 @@ class Builder extends EloquentBuilder
      * @param  array        $options
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|null
      * @throws NoFileException
+     * @deprecated Query-based export; will be removed. Use export classes (FromWordTemplate) instead.
      */
     public function exportFirst($name = null, $columns = ['*'], array $options = [])
     {
@@ -69,6 +77,7 @@ class Builder extends EloquentBuilder
      * @param  string  $templatePath
      * @return $this
      * @throws NoFileException
+     * @deprecated Query-based export; will be removed. Use export classes (FromWordTemplate) instead.
      */
     public function template(string $templatePath): Builder
     {
@@ -88,11 +97,17 @@ class Builder extends EloquentBuilder
     }
 
 
+    /**
+     * @deprecated Query-based export; will be removed. Use export classes (FromWordTemplate) instead.
+     */
     public function store(string $path, array $options = [])
     {
         return $this->storeAs($path, $this->hashName($options), $options);
     }
 
+    /**
+     * @deprecated Query-based export; will be removed. Use export classes (FromWordTemplate) instead.
+     */
     public function storeAs(string $filePath, string $name, $options = [])
     {
         $this->beginnProcess($options);
@@ -110,6 +125,9 @@ class Builder extends EloquentBuilder
     }
 
 
+    /**
+     * @deprecated Query-based export; will be removed. Use export classes (FromWordTemplate) instead.
+     */
     public function first($columns = ['*'])
     {
         return self::$exportdata = $this->take(1)->get($columns)->first();

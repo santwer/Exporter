@@ -8,6 +8,11 @@ use Santwer\Exporter\Eloquent\Builder;
 use Santwer\Exporter\Processor\ModelProcessor;
 
 /**
+ * Enables query-based export (Model::where()->template()->export()). This usage will be removed.
+ *
+ * @deprecated Query-chain export is deprecated and will be removed in a future version.
+ *             For model data use export classes (FromWordTemplate) with e.g. TokensFromModel.
+ *
  * @method static export(?string $name, array $options = [])
  * @method static ddExport(?string $name, array $options = [])
  * @method static exportFirst(?string $name = null, $columns = ['*'], array $options = [])

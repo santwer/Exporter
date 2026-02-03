@@ -11,6 +11,11 @@ use Santwer\Exporter\Processor\GlobalVariables;
 use Santwer\Exporter\Processor\ModelProcessor;
 use Santwer\Exporter\Processor\VariablesConditionProcessor;
 
+/**
+ * Only used by Eloquent Builder for query-based export.
+ *
+ * @deprecated Query-based export; will be removed in a future version.
+ */
 trait ExportOptions
 {
     protected $template;

@@ -5,6 +5,12 @@ namespace Santwer\Exporter\Processor;
 use Illuminate\Database\Eloquent\Model;
 use Santwer\Exporter\Exportable;
 
+/**
+ * Used only by the deprecated query-based export path (Builder + Exportable).
+ *
+ * @deprecated Will be removed with the query-based export. Use export classes (FromWordTemplate) instead.
+ * @internal
+ */
 class ModelProcessor
 {
 

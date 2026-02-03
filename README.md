@@ -19,7 +19,7 @@ This package is based on [phpoffice/phpword](https://github.com/PHPOffice/PHPWor
     - [Charts](#charts)
     - [Images](#images)
     - [Tables](#tables)
-- [How to use in Query](#how-to-use-in-query)
+- [How to use in Query (deprecated)](#how-to-use-in-query)
     - [Basic Export](#basic-export)
     - [Export as PDF](#export-as-pdf)
     - [Autoloading Relations](#autoloading-relations)
@@ -361,6 +361,9 @@ class FirstExport implements FromWordTemplate, TokensFromCollection, GlobalToken
 ```
 
 ## How to use in Query
+
+> **Deprecated:** This usage is **deprecated** and will be removed in a future major version. Please use export classes (FromWordTemplate) and the WordExport facade instead.
+
 Add Trait *Exportable*
 ```php
 use Santwer\Exporter\Exportable;
