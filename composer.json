@@ -20,6 +20,16 @@
         }
     ],
     "minimum-stability": "dev",
+    "require-dev": {
+        "orchestra/testbench": "^9.0|^10.0",
+        "phpunit/phpunit": "^10.0|^11.0",
+        "mockery/mockery": "^1.6"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Santwer\\Exporter\\Tests\\": "tests/"
+        }
+    },
     "extra": {
         "laravel": {
             "providers": [
