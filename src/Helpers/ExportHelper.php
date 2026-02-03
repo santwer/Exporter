@@ -18,7 +18,20 @@ class ExportHelper
 	protected static int $subBatchCalls = 0;
 	protected static array $garbage = [];
 	protected static array $garbageFiles = [];
-	public static function generateRandomString()
+
+	public static function resetBatchCounters(): void
+	{
+		self::$subBatch = 0;
+		self::$subBatchCalls = 0;
+	}
+
+	public static function resetGarbage(): void
+	{
+		self::$garbage = [];
+		self::$garbageFiles = [];
+	}
+
+	public static function generateRandomString(): string
 	{
 		return uniqid();
 	}

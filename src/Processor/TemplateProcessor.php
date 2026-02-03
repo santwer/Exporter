@@ -58,6 +58,19 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 	 *
 	 * @return string|null
 	 */
+	public function cloneRecursiveBlocks(
+		$blockname,
+		$clones = 1,
+		$replace = true,
+		$indexVariables = false,
+		$variableReplacements = null
+	) {
+		return $this->cloneRecursiveBlock($blockname,
+			$clones, $replace, $indexVariables, $variableReplacements,
+			$this->tempDocumentMainPart);
+	}
+
+	/** @deprecated Use cloneRecursiveBlocks() */
 	public function cloneRecrusiveBlocks(
 		$blockname,
 		$clones = 1,
@@ -65,12 +78,10 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 		$indexVariables = false,
 		$variableReplacements = null
 	) {
-		return $this->cloneRecrusiveBlock($blockname,
-			$clones, $replace, $indexVariables, $variableReplacements,
-			$this->tempDocumentMainPart);
+		return $this->cloneRecursiveBlocks($blockname, $clones, $replace, $indexVariables, $variableReplacements);
 	}
 
-	private function collectListRecusive(Collection $collection, $prekey = null): array
+	private function collectListRecursive(Collection $collection, $prekey = null): array
 	{
 		return $collection->mapWithKeys(function ($value, $key) use ($prekey) {
 			$newkey = $prekey ? $prekey.'.'.$key : $key;
@@ -78,11 +89,11 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 				return [$newkey => $value];
 			}
 
-			return array_merge([$key => $value], $this->collectListRecusive(collect($value), $newkey));
+			return array_merge([$key => $value], $this->collectListRecursive(collect($value), $newkey));
 		})->toArray();
 	}
 
-	public function arrayListRecusive(array $array): array
+	public function arrayListRecursive(array $array): array
 	{
 		return array_map(function ($x) {
 			if (!is_array($x)) {
@@ -95,10 +106,16 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 						return [$key => $value];
 					}
 
-					return array_merge([$key => $value], $this->collectListRecusive(collect($value),$key));
+					return array_merge([$key => $value], $this->collectListRecursive(collect($value),$key));
 				})
 				->toArray();
 		}, $array);
+	}
+
+	/** @deprecated Use arrayListRecursive() */
+	public function arrayListRecusive(array $array): array
+	{
+		return $this->arrayListRecursive($array);
 	}
 
 	/**
@@ -112,7 +129,7 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 	 *
 	 * @return string|null
 	 */
-	public function cloneRecrusiveBlock(
+	private function cloneRecursiveBlock(
 		$blockname,
 		$clones = 1,
 		$replace = true,
@@ -173,7 +190,7 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 					}
 					$clonedBlockVaribles = $variableReplacementsRecrusive[$index];
 					foreach ($clonedBlockVaribles as $block => $variableReplacementsR) {
-						$this->cloneRecrusiveBlock($block,
+						$this->cloneRecursiveBlock($block,
 							$clones,
 							$replace,
 							$indexVariables,

@@ -32,7 +32,7 @@ class Builder extends EloquentBuilder
     {
         if(is_array($name)) {
             $options = array_merge($name, $options);
-            $name = isset($options['name']) ? $options['name'] : null;
+            $name = $options['name'] ?? null;
         }
         $this->beginnProcess($options);
         if($this::$exportdata === null && !empty($this->getModel()->getAttributes())) {
@@ -63,7 +63,7 @@ class Builder extends EloquentBuilder
     {
         if(is_array($name)) {
             $options = array_merge($name, $options);
-            $name = isset($options['name']) ? $options['name'] : null;
+            $name = $options['name'] ?? null;
         }
         $this->beginnProcess($options);
         $data = collect([$this->first($columns)]);

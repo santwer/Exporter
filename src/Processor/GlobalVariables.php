@@ -17,21 +17,20 @@ class GlobalVariables
         return array_merge($vars, self::$globalVars);
     }
 
-    /**
-     * @param  string  $key
-     * @param  string  $value
-     * @return void
-     */
-    public static function setVariable(string $key, string $value)
+    public static function setVariable(string $key, string $value): void
     {
         self::$globalVars[$key] = $value;
     }
 
-    public static function setVariables(array $values)
+    public static function setVariables(array $values): void
     {
         foreach($values as $key => $value) {
             self::setVariable($key, $value);
         }
     }
 
+    public static function clear(): void
+    {
+        self::$globalVars = [];
+    }
 }

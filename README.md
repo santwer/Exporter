@@ -65,6 +65,9 @@ Also add the path to the soffice command to the system environment variables.
     export PATH=$PATH:/path/to/soffice
 ```
 
+#### Security Note
+> **Warning:** The PDF conversion executes the `soffice` command with file paths from your application. Only use templates from trusted sources and sanitize any user-provided template paths to prevent command injection vulnerabilities.
+
 ## How to use with ExportClasses
 
 ### Usage
@@ -363,6 +366,36 @@ class FirstExport implements FromWordTemplate, TokensFromCollection, GlobalToken
 ## How to use in Query
 
 > **Deprecated:** This usage is **deprecated** and will be removed in a future major version. Please use export classes (FromWordTemplate) and the WordExport facade instead.
+>
+> ### Migration Guide
+>
+> **Before (Query-based, deprecated):**
+> ```php
+> use Santwer\Exporter\Exportable;
+> class User extends Model { use Exportable; }
+> 
+> User::where('active', true)
+>     ->template('templates/users.docx')
+>     ->export();
+> ```
+>
+> **After (Export classes, recommended):**
+> ```php
+> use Santwer\Exporter\Concerns\{FromWordTemplate, TokensFromCollection};
+> 
+> class UserExport implements FromWordTemplate, TokensFromCollection {
+>     public function __construct(private Collection $users) {}
+>     public function wordTemplateFile(): string { return 'templates/users.docx'; }
+>     public function blockName(): string { return 'users'; }
+>     public function items(): Collection { return $this->users; }
+>     public function itemTokens($user): array { return $user->toArray(); }
+> }
+> 
+> WordExport::download(
+>     new UserExport(User::where('active', true)->get()), 
+>     'users.docx'
+> );
+> ```
 
 Add Trait *Exportable*
 ```php

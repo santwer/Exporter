@@ -5,6 +5,8 @@ namespace Santwer\Exporter\Tests;
 use Orchestra\Testbench\TestCase as Orchestra;
 use PhpOffice\PhpWord\PhpWord;
 use Santwer\Exporter\ExporterProvider;
+use Santwer\Exporter\Helpers\ExportHelper;
+use Santwer\Exporter\Processor\GlobalVariables;
 
 abstract class TestCase extends Orchestra
 {
@@ -20,6 +22,14 @@ abstract class TestCase extends Orchestra
         $app['config']->set('exporter.temp_folder', sys_get_temp_dir().'/exporter-test-'.uniqid());
         $app['config']->set('exporter.temp_folder_relative', false);
         $app['config']->set('exporter.batch_size', 200);
+    }
+
+    protected function tearDown(): void
+    {
+        GlobalVariables::clear();
+        ExportHelper::resetBatchCounters();
+        ExportHelper::resetGarbage();
+        parent::tearDown();
     }
 
     protected function createMinimalDocx(string $placeholder = '${test}'): string

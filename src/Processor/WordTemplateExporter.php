@@ -16,16 +16,18 @@ use Santwer\Exporter\Concerns\TokensFromObject;
 use Santwer\Exporter\Concerns\WithWordProcessor;
 use Santwer\Exporter\Concerns\TokensFromCollection;
 use Santwer\Exporter\Exceptions\MissingConcernException;
+use Santwer\Exporter\Services\TemplatePathResolver;
 
 class WordTemplateExporter
 {
 	protected object $export;
 	protected array $concerns = [];
+	protected ?TemplatePathResolver $pathResolver = null;
 
 	public function processFile(object $export): Exporter
 	{
 		$this->export = $export;
-		$this->implementsMinumum();
+		$this->implementsMinimum();
 		$file = $this->getFilePath();
 
 		$exporter = new Exporter($file);
@@ -36,15 +38,10 @@ class WordTemplateExporter
 
 	private function getFilePath(): string
 	{
-		$file = $this->export->wordTemplateFile();
-		if (!file_exists($file)) {
-			$file = storage_path($file);
+		if ($this->pathResolver === null) {
+			$this->pathResolver = new TemplatePathResolver();
 		}
-		if (!file_exists($file)) {
-			$file = storage_path('app/'.$this->export->wordTemplateFile());
-		}
-
-		return $file;
+		return $this->pathResolver->resolve($this->export->wordTemplateFile());
 	}
 
 	private function setValues(Exporter $exporter): void
@@ -55,7 +52,7 @@ class WordTemplateExporter
 				$blockNames = [$blockNames];
 			}
 			foreach ($blockNames as $blockName) {
-				$data = isset($this->formatData()[$blockName]) ? $this->formatData()[$blockName] : $this->formatData();
+				$data = $this->formatData()[$blockName] ?? $this->formatData();
 				if($data instanceof Collection) {
 					$data = $data->toArray();
 				}
@@ -130,7 +127,7 @@ class WordTemplateExporter
 		}
 	}
 
-	private function formatData()
+	private function formatData(): array
 	{
 		if ($this->hasConcern(TokensFromCollection::class)) {
 			return $this->export->items()->map(fn ($x) => $this->export->itemTokens($x))->toArray();
@@ -141,7 +138,7 @@ class WordTemplateExporter
 		throw new MissingConcernException();
 	}
 
-	private function implementsMinumum()
+	private function implementsMinimum(): void
 	{
 		$this->concerns = class_implements($this->export);
 		$implementsMissing = array_diff([FromWordTemplate::class], $this->concerns);

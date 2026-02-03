@@ -3,126 +3,86 @@
 namespace Santwer\Exporter\Processor;
 
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Process;
+use Santwer\Exporter\Exceptions\PDFConversionException;
 use Santwer\Exporter\Helpers\ExportHelper;
+use Symfony\Component\Process\Exception\ProcessFailedException;
+use Symfony\Component\Process\Process;
 
 class PDFExporter
 {
-	protected static $outPutFile = '';
 
-
-	public static function html2Pdf(string $html, ?string $path = null)
-	{
-		$htmlfile = ExportHelper::tempFile();
-
-		$handler = fopen($htmlfile, "w");
-		fwrite($handler, $html);
-		fclose($handler);
-
-		if ($path !== null) {
-			$return = exec(self::getCommand('html2pdfPath', $path, $htmlfile));
-		} else {
-			$return = exec(self::getCommand('html2pdf', $htmlfile));
-		}
-		if (!self::checkReturnValue($return)) {
-			throw new \Exception($return);
-		}
-
-		return self::$outPutFile;
-	}
 
 	/**
-	 * @param $docX
-	 * @param $path
-	 * @throws \Exception
+	 * @throws PDFConversionException
 	 */
-	public static function docxToPdf($docX, $path = null)
+	public static function html2Pdf(string $html, ?string $path = null): string
 	{
+		$htmlfile = ExportHelper::tempFile();
+		file_put_contents($htmlfile, $html);
 
-		$return = shell_exec(self::getCommand('docx2pdfPath', $path, $docX));
-		if(!self::checkReturnValue($return)) {
-			throw new \Exception($return);
+		$outDir = $path ?? pathinfo($htmlfile, PATHINFO_DIRNAME);
+
+		$command = [
+			config('exporter.word2pdf.soffice_prefix').'soffice',
+			'--convert-to',
+			'pdf',
+			'--outdir',
+			$outDir,
+			$htmlfile,
+			'--headless'
+		];
+
+		$process = new Process($command);
+		$process->setTimeout(120);
+		$process->run();
+
+		if (!$process->isSuccessful()) {
+			throw PDFConversionException::fromProcess(
+				$process->getOutput(),
+				$process->getErrorOutput()
+			);
 		}
 
-		if ($path !== null) {
-			//get file extension
-			$fileext = pathinfo($docX, PATHINFO_EXTENSION);
-			if (empty($fileext)) {
-				$file = $docX.'.pdf';
-			} else {
-				$file = Str::replace('.'.$fileext, '.pdf', $docX);
-			}
-			return  ExportHelper::convertForRunningInConsole($file);
-		}
-		$file = $path.pathinfo($docX, PATHINFO_FILENAME).'.pdf';
+		$file = Str::replace('.tmp', '.pdf', $htmlfile);
 		return ExportHelper::convertForRunningInConsole($file);
 	}
 
-	private static function cmdToString(array $array) : string
-	{
-		return implode(' ', array_map(function ($item) {
-			if(Str::contains($item, ' ') && !Str::startsWith($item, '"')) {
-				return '"'.$item.'"';
-			} else
-			return trim($item);
-		},$array));
-	}
-
 	/**
-	 * @param         $type
-	 * @param  mixed  ...$args
-	 * @return string
+	 * @throws PDFConversionException
 	 */
-	private static function getCommand($type, ...$args): string
+	public static function docxToPdf($docX, $path = null): string
 	{
+		$outDir = $path ?? pathinfo($docX, PATHINFO_DIRNAME);
 
-		$collection = collect(explode(' ', self::commands($type)));
-		$partIndex = 0;
+		$command = [
+			config('exporter.word2pdf.soffice_prefix').'soffice',
+			'--convert-to',
+			'pdf',
+			'--outdir',
+			$outDir,
+			$docX,
+			'--headless'
+		];
 
-		foreach ($collection as $index => $commandPart) {
-			if($index === 0 && !empty(config('exporter.word2pdf.soffice_prefix'))) {
-				$collection[$index] = config('exporter.word2pdf.soffice_prefix').$commandPart;
-			}
+		$process = new Process($command);
+		$process->setTimeout(120);
+		$process->run();
 
-			if (Str::contains($commandPart, ['?','%s', '"%s"'])) {
-				if (isset($args[$partIndex])) {
-					$collection[$index] = Str::replace(['?','%s', '"%s"'], $args[$partIndex], $collection[$index]);
-				}
-				$partIndex++;
-			}
+		if (!$process->isSuccessful()) {
+			throw PDFConversionException::fromProcess(
+				$process->getOutput(),
+				$process->getErrorOutput()
+			);
 		}
 
-		return self::cmdToString($collection
-			->toArray());
-	}
-
-
-	/**
-	 * @param $type
-	 * @return string
-	 */
-	private static function commands($type)
-	{
-		switch ($type) {
-			case 'docx2pdfPath':
-			case 'html2pdfPath':
-				return config('exporter.word2pdf.command');
-			default:
-				return $type;
-		}
-	}
-
-
-	private static function checkReturnValue($value)
-	{
-		$checkConvert = explode(' ', $value);
-		if (isset($checkConvert[3])) {
-			self::$outPutFile = $checkConvert[3];
-		}
-		if ($checkConvert[0] === 'convert') {
-			return true;
+		$fileext = pathinfo($docX, PATHINFO_EXTENSION);
+		if (empty($fileext)) {
+			$file = $docX.'.pdf';
 		} else {
-			return false;
+			$file = Str::replace('.'.$fileext, '.pdf', $docX);
 		}
+
+		return ExportHelper::convertForRunningInConsole($file);
 	}
+
 }

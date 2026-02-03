@@ -52,4 +52,94 @@ class ExporterTest extends TestCase
         $outPath = $exporter->getProcessedConvertedFile(Writer::DOCX);
         $this->assertFileExists($outPath);
     }
+
+    public function test_set_array_flattens_nested_arrays(): void
+    {
+        $templatePath = $this->createMinimalDocx();
+        $exporter = new Exporter($templatePath);
+        $exporter->setArray(['user' => ['name' => 'John', 'email' => 'john@test.com']]);
+        $vars = $exporter->getTemplateVariables();
+        $this->assertIsArray($vars);
+    }
+
+    public function test_set_checkbox(): void
+    {
+        $templatePath = $this->createMinimalDocx();
+        $exporter = new Exporter($templatePath);
+        $exporter->setCheckbox('agree', true);
+        $exporter->setCheckbox('optout', false);
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_set_chart(): void
+    {
+        $templatePath = $this->createMinimalDocx();
+        $exporter = new Exporter($templatePath);
+        $exporter->setChart('sales', (object)['data' => []]);
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_set_image_with_string_path(): void
+    {
+        $templatePath = $this->createMinimalDocx();
+        $exporter = new Exporter($templatePath);
+        $exporter->setImage('logo', __FILE__);
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_set_tables(): void
+    {
+        $templatePath = $this->createMinimalDocx();
+        $exporter = new Exporter($templatePath);
+        $exporter->setTables(['table1' => ['rows' => []]]);
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_table_data_to_complex_block_with_callable(): void
+    {
+        $templatePath = $this->createMinimalDocx();
+        $exporter = new Exporter($templatePath);
+        $exporter->setTables(['table1' => fn() => ['rows' => [['Col1', 'Col2']]]]);
+        $processor = $exporter->process();
+        $this->assertNotNull($processor);
+    }
+
+    public function test_table_data_with_headers_and_style(): void
+    {
+        $templatePath = $this->createMinimalDocx();
+        $exporter = new Exporter($templatePath);
+        $exporter->setTables(['table1' => [
+            'style' => 'gridTable',
+            'headers' => [
+                ['text' => 'Name', 'width' => 2000, 'style' => 'bold'],
+                'Email'
+            ],
+            'rows' => [
+                [['text' => 'John', 'width' => 2000], 'john@test.com']
+            ]
+        ]]);
+        $processor = $exporter->process();
+        $this->assertNotNull($processor);
+    }
+
+    public function test_process_with_combined_features(): void
+    {
+        $templatePath = $this->createMinimalDocx('${test}${block}${item}${/block}');
+        $exporter = new Exporter($templatePath);
+        $exporter->setValue('test', 'Value');
+        $exporter->setBlockValues('block', [['item' => 'A'], ['item' => 'B']]);
+        $exporter->setCheckbox('check', true);
+        $processor = $exporter->process();
+        $this->assertNotNull($processor);
+    }
+
+    public function test_get_template_processor_returns_same_instance(): void
+    {
+        $templatePath = $this->createMinimalDocx();
+        $exporter = new Exporter($templatePath);
+        $proc1 = $exporter->getTemplateProcessor();
+        $proc2 = $exporter->getTemplateProcessor();
+        $this->assertSame($proc1, $proc2);
+    }
 }
+

@@ -18,12 +18,17 @@ class ExporterProvider extends ServiceProvider
 	 *
 	 * @return void
 	 */
-	public function boot()
+	public function boot(): void
 	{
 		$this->commands([
 			MakeExportCommand::class,
 		]);
 
+		if ($this->app->runningInConsole()) {
+			$this->publishes([
+				__DIR__.'/../config/exporter.php' => config_path('exporter.php'),
+			], 'exporter-config');
+		}
 	}
 
 	/**
