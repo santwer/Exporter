@@ -1,0 +1,24 @@
+site_name: Word Template Exporter
+docs_dir: docs
+theme: readthedocs
+plugins:
+  - search
+markdown_extensions:
+  - tables
+  - fenced_code
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Configuration: configuration.md
+  - Quick Start: quickstart.md
+  - Export Classes: export-classes.md
+  - Concerns & Interfaces: concerns.md
+  - Template Syntax: template-syntax.md
+  - Template Resolution: template-resolution.md
+  - Charts: charts.md
+  - Images: images.md
+  - Tables: tables.md
+  - Checkboxes: checkboxes.md
+  - Batch & Queue: batch-and-queue.md
+  - Exportable (Deprecated): exportable-deprecated.md
+  - Processors (Reference): processors.md
