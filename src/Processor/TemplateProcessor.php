@@ -14,26 +14,47 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 		$replace,
 		$limit = \PhpOffice\PhpWord\TemplateProcessor::MAXIMUM_REPLACEMENTS_DEFAULT,
 		bool $allowTags = false
-	): void {
+	): void
+    {
 		parent::setValue($search, $this->replace($replace, $allowTags), $limit);
 	}
 
 
-	public function replace($replace, bool $allowTags = false)
-	{
+	public function replace($replace, bool $allowTags = false): array|string
+    {
+		// Handle array format [value, allowTags]
 		if (is_array($replace)) {
 			[$replace, $allowTags] = array_pad($replace, 2, false);
 		}
 
-		if(method_exists(Str::class, 'replaceMatches')) {
-			$replace = Str::replaceMatches(['/&(?![a-zA-Z0-9]+;)/'], '&amp;', $replace);
-		} else {
-			$replace = preg_replace('/&(?![a-zA-Z0-9]+;)/', '&amp;', $replace);
+		// Convert non-string types to string
+		if ($replace === null) {
+			return '';
 		}
+		if (!is_string($replace)) {
+			$replace = (string) $replace;
+		}
+
+		// Normalize to UTF-8
+		$replace = static::ensureUtf8Encoded($replace);
+
+		// Escape XML-relevant characters
 		if (!$allowTags) {
-			$replace = Str::replace(['<'], '&lt;', $replace);
-			$replace = Str::replace(['>'], '&gt;', $replace);
+			// Full XML escaping: & < > " '
+			$replace = htmlspecialchars($replace, ENT_XML1 | ENT_QUOTES, 'UTF-8', false);
+		} else {
+			// Only escape & " ' (preserve < > for tags)
+			// First escape & (but not existing entities)
+			if(method_exists(Str::class, 'replaceMatches')) {
+				$replace = Str::replaceMatches(['/&(?![a-zA-Z0-9]+;)/'], '&amp;', $replace);
+			} else {
+				$replace = preg_replace('/&(?![a-zA-Z0-9]+;)/', '&amp;', $replace);
+			}
+			// Escape quotes
+			$replace = str_replace('"', '&quot;', $replace);
+			$replace = str_replace("'", '&#039;', $replace);
 		}
+
 		return $replace;
 	}
 

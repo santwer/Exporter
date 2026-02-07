@@ -72,3 +72,7 @@ return WordExport::download(new HelloExport(), 'hello.docx');
 ```
 
 The response is a file download. Use `.pdf` as extension to get PDF (requires LibreOffice). See [Export Classes](export-classes.md) and [Template Syntax](template-syntax.md) for more.
+
+## Security Note
+
+All text values are automatically escaped for XML safety. Special characters like `&`, `<`, `>`, `"`, `'` are converted to XML entities. This prevents injection vulnerabilities. See [XML Escaping & Security](xml-escaping.md) for details on `allowTags` mode for formatted content.

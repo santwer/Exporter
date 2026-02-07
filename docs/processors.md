@@ -12,15 +12,19 @@ Used for Eloquent models with the Exportable trait (deprecated path). Checks for
 
 ## TemplateProcessor
 
-Extends PHPWord’s template processor. Handles placeholder replacement and recursive block cloning (loops). Key methods: `setValue()`, `replace()`, `cloneRecrusiveBlocks()`, `arrayListRecusive()`. Used by `Exporter` to fill the Word document.
+Extends PHPWord's template processor. Handles placeholder replacement and recursive block cloning (loops). Key methods: `setValue()`, `replace()`, `cloneRecrusiveBlocks()`, `arrayListRecusive()`. Used by `Exporter` to fill the Word document.
+
+**XML Escaping:** The `replace()` method automatically escapes all text values for XML safety: `&`, `<`, `>`, `"`, `'` → XML entities. With `allowTags` parameter, only `&`, `"`, `'` are escaped while `<` and `>` are preserved. Supports UTF-8 and prevents double-escaping. See [XML Escaping & Security](xml-escaping.md).
 
 ## Exporter
 
 Central handler that holds the template file and collected values, blocks, charts, images, and tables. Coordinates `TemplateProcessor` and triggers processing. Key methods: `setBlockValues()`, `setValue()` / `setArrayValues()`, `setChart()` / `setImage()` / `setTables()` / `setCheckbox()`, `process()`, `getProcessedFile()`, `getProcessedConvertedFile()` for PDF conversion.
 
+**Output Escaping:** Disables PHPWord's internal XML escaping (`Settings::setOutputEscapingEnabled(false)`) to prevent double-escaping, as the `TemplateProcessor::replace()` method handles all escaping.
+
 ## PDFExporter
 
-Handles conversion of Word or HTML to PDF via LibreOffice’s `soffice` command. Key methods: `docxToPdf($docX, $path = null)`, `html2Pdf(string $html, ?string $path = null)`. Uses `config('exporter.word2pdf')` for command and prefix.
+Handles conversion of Word or HTML to PDF via LibreOffice's `soffice` command. Key methods: `docxToPdf($docX, $path = null)`, `html2Pdf(string $html, ?string $path = null)`. Uses `config('exporter.word2pdf')` for command and prefix.
 
 ## BatchProcessor
 

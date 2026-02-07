@@ -9,6 +9,7 @@ A Laravel package for exporting Word templates with placeholders as `.docx` or `
 - **Data sources**: Export classes implementing concerns/interfaces, or Eloquent models with the Exportable trait.
 - **Extended features**: Charts, images, tables, checkboxes.
 - **Relations**: Automatic loading and processing of Eloquent relations based on template placeholders.
+- **Security**: Automatic XML escaping for all text values with UTF-8 support.
 
 ## Tech Stack
 
@@ -20,24 +21,38 @@ A Laravel package for exporting Word templates with placeholders as `.docx` or `
 
 ### Data Flow
 
-```mermaid
-flowchart TB
-  Template[Word Template with placeholders]
-  Export[Export class or Eloquent model]
-  Processor[WordTemplateExporter or ModelProcessor]
-  TemplateProcessor[TemplateProcessor PHPWord]
-  Output[Word .docx or PDF .pdf]
-  Template --> Export
-  Export --> Processor
-  Processor --> TemplateProcessor
-  TemplateProcessor --> Output
+The export class (or Eloquent model) provides the **template path** and the **data**. The processor loads the template, fills an internal Exporter with that data, then runs PHPWord’s TemplateProcessor to produce the file.
+
+**Export class path (recommended):**
+
+```
+Export class (wordTemplateFile() + concerns: values, items, charts, images, tables, …)
+    │
+    ▼
+WordTemplateExporter::processFile($export)
+    │  Resolves template path, creates Exporter(templatePath), fills it from export (setValues)
+    ▼
+Exporter (holds template path + values, blocks, charts, images, tables)
+    │
+    ▼
+Exporter::getProcessedFile() / getProcessedConvertedFile()
+    │  process() → TemplateProcessor (PHPWord) replaces placeholders, saveAs(.docx)
+    ▼
+.docx file
+    │  If format is PDF:
+    ▼
+PDFExporter::docxToPdf() (LibreOffice soffice)
+    │
+    ▼
+.pdf file
 ```
 
-1. **Word template** (with placeholders) is loaded.
-2. **Export class** (with concerns) or **Eloquent model** (with Exportable trait) provides data.
-3. **WordTemplateExporter** or **ModelProcessor** coordinates processing.
-4. **TemplateProcessor** (PHPWord) replaces placeholders and handles blocks.
-5. Output is a **Word file** (`.docx`) or **PDF** (via LibreOffice).
+**Model path (deprecated):** Eloquent builder with Exportable → ModelProcessor builds data from the model → Exporter (same as above) → .docx or .pdf.
+
+1. **Export class** (or model) provides the template path and all data (tokens, blocks, charts, images, tables, checkboxes).
+2. **WordTemplateExporter** (or ModelProcessor) resolves the template file path, creates an **Exporter** instance with that path, and fills it from the export/model.
+3. **Exporter** holds the template path and data; when output is requested it runs **process()**, which uses **TemplateProcessor** (PHPWord) to replace placeholders and write the `.docx`.
+4. For PDF, **PDFExporter** converts the `.docx` to `.pdf` via LibreOffice.
 
 ### Package Structure
 

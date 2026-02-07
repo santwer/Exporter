@@ -49,6 +49,81 @@ class TemplateProcessorTest extends TestCase
 		$this->assertSame('value', $result);
 	}
 
+	public function test_replace_escapes_double_quotes(): void
+	{
+		$docPath = $this->createMinimalDocx();
+		$processor = new TemplateProcessor($docPath);
+		$result = $processor->replace('Say "Hello"');
+		$this->assertStringContainsString('&quot;', $result);
+		$this->assertStringNotContainsString('"', $result);
+	}
+
+	public function test_replace_escapes_single_quotes(): void
+	{
+		$docPath = $this->createMinimalDocx();
+		$processor = new TemplateProcessor($docPath);
+		$result = $processor->replace("It's working");
+		// ENT_XML1 uses &apos; for single quotes
+		$this->assertStringContainsString('&apos;', $result);
+	}
+
+	public function test_replace_escapes_quotes_with_allow_tags(): void
+	{
+		$docPath = $this->createMinimalDocx();
+		$processor = new TemplateProcessor($docPath);
+		$result = $processor->replace('<p class="test">Text\'s "value"</p>', true);
+		// Tags should be preserved
+		$this->assertStringContainsString('<p', $result);
+		$this->assertStringContainsString('</p>', $result);
+		// Quotes should be escaped (allowTags uses &#039; for single quotes)
+		$this->assertStringContainsString('&quot;', $result);
+		$this->assertStringContainsString('&#039;', $result);
+	}
+
+	public function test_replace_preserves_utf8_characters(): void
+	{
+		$docPath = $this->createMinimalDocx();
+		$processor = new TemplateProcessor($docPath);
+		$result = $processor->replace('Ä Ö Ü ä ö ü ß € ñ');
+		$this->assertStringContainsString('Ä', $result);
+		$this->assertStringContainsString('Ö', $result);
+		$this->assertStringContainsString('Ü', $result);
+		$this->assertStringContainsString('ä', $result);
+		$this->assertStringContainsString('ö', $result);
+		$this->assertStringContainsString('ü', $result);
+		$this->assertStringContainsString('ß', $result);
+		$this->assertStringContainsString('€', $result);
+		$this->assertStringContainsString('ñ', $result);
+	}
+
+	public function test_replace_handles_null_value(): void
+	{
+		$docPath = $this->createMinimalDocx();
+		$processor = new TemplateProcessor($docPath);
+		$result = $processor->replace(null);
+		$this->assertSame('', $result);
+	}
+
+	public function test_replace_handles_numeric_values(): void
+	{
+		$docPath = $this->createMinimalDocx();
+		$processor = new TemplateProcessor($docPath);
+		$resultInt = $processor->replace(42);
+		$this->assertSame('42', $resultInt);
+		$resultFloat = $processor->replace(3.14);
+		$this->assertSame('3.14', $resultFloat);
+	}
+
+	public function test_replace_does_not_double_encode_entities(): void
+	{
+		$docPath = $this->createMinimalDocx();
+		$processor = new TemplateProcessor($docPath);
+		$result = $processor->replace('Already &amp; encoded');
+		// Should not become &amp;amp;
+		$this->assertStringContainsString('&amp;', $result);
+		$this->assertStringNotContainsString('&amp;amp;', $result);
+	}
+
 	public function test_clone_recursive_blocks_processes_block(): void
 	{
 		$docPath = $this->createMinimalDocx('${block}${name}${/block}');

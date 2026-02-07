@@ -15,6 +15,7 @@ nav:
   - Concerns & Interfaces: concerns.md
   - Template Syntax: template-syntax.md
   - Template Resolution: template-resolution.md
+  - XML Escaping & Security: xml-escaping.md
   - Charts: charts.md
   - Images: images.md
   - Tables: tables.md

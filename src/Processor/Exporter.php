@@ -158,6 +158,10 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 	 */
 	public function process(): TemplateProcessor
 	{
+		// Disable PHPWord output escaping to avoid double-escaping
+		// (our TemplateProcessor::replace() handles all XML escaping)
+		\PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(false);
+
 		$templateProcessor = $this->getTemplateProcessor();
 		$values = collect($this->values);
 
