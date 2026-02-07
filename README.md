@@ -3,7 +3,7 @@
 Laravel package for exporting Word templates with placeholders as `.docx` or `.pdf`. Based on [phpoffice/phpword](https://github.com/PHPOffice/PHPWord).
 
 <p style="text-align: center;">
-<a href="https://github.com/santwer/exporter"><img src="https://img.shields.io/github/commit-activity/m/santwer/exporter" alt="Commit Activity"></a>
+<a href="https://github.com/santwer/Exporter"><img src="https://img.shields.io/github/commit-activity/m/santwer/Exporter" alt="Commit Activity"></a>
 <a href="https://packagist.org/packages/santwer/exporter"><img src="https://img.shields.io/packagist/dt/santwer/exporter" alt="Total Downloads"></a>
 <a href="https://packagist.org/packages/santwer/exporter"><img src="https://img.shields.io/packagist/v/santwer/exporter" alt="Latest Stable Version"></a>
 <a href="https://packagist.org/packages/santwer/exporter"><img src="https://img.shields.io/packagist/l/santwer/exporter" alt="License"></a>
@@ -19,7 +19,7 @@ For PDF export, LibreOffice must be installed. See the full documentation.
 
 ## Full documentation
 
-**Full documentation** is in the [docs/](docs/) folder (MkDocs). When hosted on Read the Docs, use your project’s RTD URL. The docs cover installation, configuration, export classes, template syntax, charts, images, tables, and more.
+**Full documentation:** [santwerexporter.readthedocs.io](https://santwerexporter.readthedocs.io/) · **Source:** [github.com/santwer/Exporter](https://github.com/santwer/Exporter). The docs cover installation, configuration, export classes, template syntax, charts, images, tables, and more.
 
 ## Quick example
 

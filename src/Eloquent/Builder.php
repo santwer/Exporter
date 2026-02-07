@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Santwer\Exporter\Eloquent;
 
 use Santwer\Exporter\Traits\ExportDebug;
@@ -17,9 +19,9 @@ use Santwer\Exporter\Traits\ExportOptions;
  */
 class Builder extends EloquentBuilder
 {
-    use ExportOptions, BuilderExportPdf, ExportDebug;
+	use ExportOptions, BuilderExportPdf, ExportDebug;
 
-    protected static $exportdata;
+	protected static mixed $exportdata = null;
 
     /**
      * @param  array|string|null  $name

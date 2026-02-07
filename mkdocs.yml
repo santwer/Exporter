@@ -1,11 +1,32 @@
 site_name: Word Template Exporter
+site_description: Laravel package for Word template exports (.docx / .pdf) with placeholders, based on PHPWord.
+site_url: https://santwerexporter.readthedocs.io/
+site_author: santwer
+copyright: Copyright &copy; santwer. Documentation licensed under CC BY 4.0.
+
+repo_url: https://github.com/santwer/Exporter
+repo_name: santwer/Exporter
+edit_uri: edit/master/docs/
+
 docs_dir: docs
-theme: readthedocs
+theme:
+  name: readthedocs
+  include_search: true
+  prev_next_buttons_location: bottom
+  sticky_navigation: true
+  navigation_depth: 2
+  collapse_navigation: false
+
 plugins:
   - search
+
 markdown_extensions:
   - tables
   - fenced_code
+  - toc:
+      permalink: true
+      toc_depth: 2
+
 nav:
   - Home: index.md
   - Installation: installation.md

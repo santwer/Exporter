@@ -2,6 +2,8 @@
 
 A Laravel package for exporting Word templates with placeholders as `.docx` or `.pdf` files. Placeholders (e.g. `${variable}`, `${block}...${/block}`) are filled with data from export classes, Eloquent models, or collections.
 
+**Repository:** [github.com/santwer/Exporter](https://github.com/santwer/Exporter) · **Packagist:** [santwer/exporter](https://packagist.org/packages/santwer/exporter) · **Documentation:** [santwerexporter.readthedocs.io](https://santwerexporter.readthedocs.io/)
+
 ## Features
 
 - **Word template processing**: Placeholders in Word templates are replaced with your data.
@@ -72,3 +74,7 @@ PDFExporter::docxToPdf() (LibreOffice soffice)
 2. **Exportable trait** (deprecated): Use the trait on models and call `->template()->export()` on the builder. See [Exportable (Deprecated)](exportable-deprecated.md).
 
 Start with [Installation](installation.md) and [Quick Start](quickstart.md).
+
+---
+
+[View on GitHub](https://github.com/santwer/Exporter) · [Report issue](https://github.com/santwer/Exporter/issues) · [Install from Packagist](https://packagist.org/packages/santwer/exporter)

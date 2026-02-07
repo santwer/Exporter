@@ -13,7 +13,7 @@ Or add to your `composer.json`:
 ```json
 {
     "require": {
-        "santwer/exporter": "^0.3"
+        "santwer/exporter": "^0.5"
     }
 }
 ```

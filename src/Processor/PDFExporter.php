@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Santwer\Exporter\Processor;
 
 use Illuminate\Support\Str;
@@ -8,10 +10,8 @@ use Santwer\Exporter\Helpers\ExportHelper;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
-class PDFExporter
+final class PDFExporter
 {
-
-
 	/**
 	 * @throws PDFConversionException
 	 */
@@ -50,7 +50,7 @@ class PDFExporter
 	/**
 	 * @throws PDFConversionException
 	 */
-	public static function docxToPdf($docX, $path = null): string
+	public static function docxToPdf(string $docX, ?string $path = null): string
 	{
 		$outDir = $path ?? pathinfo($docX, PATHINFO_DIRNAME);
 
@@ -84,5 +84,4 @@ class PDFExporter
 
 		return ExportHelper::convertForRunningInConsole($file);
 	}
-
 }

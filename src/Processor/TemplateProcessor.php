@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Santwer\Exporter\Processor;
 
 use Illuminate\Support\Str;
@@ -8,20 +10,17 @@ use Illuminate\Support\Collection;
 
 class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 {
-
 	public function setValue(
 		$search,
 		$replace,
 		$limit = \PhpOffice\PhpWord\TemplateProcessor::MAXIMUM_REPLACEMENTS_DEFAULT,
 		bool $allowTags = false
-	): void
-    {
+	): void {
 		parent::setValue($search, $this->replace($replace, $allowTags), $limit);
 	}
 
-
-	public function replace($replace, bool $allowTags = false): array|string
-    {
+	public function replace(mixed $replace, bool $allowTags = false): string
+	{
 		// Handle array format [value, allowTags]
 		if (is_array($replace)) {
 			[$replace, $allowTags] = array_pad($replace, 2, false);
@@ -45,7 +44,7 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 		} else {
 			// Only escape & " ' (preserve < > for tags)
 			// First escape & (but not existing entities)
-			if(method_exists(Str::class, 'replaceMatches')) {
+			if (method_exists(Str::class, 'replaceMatches')) {
 				$replace = Str::replaceMatches(['/&(?![a-zA-Z0-9]+;)/'], '&amp;', $replace);
 			} else {
 				$replace = preg_replace('/&(?![a-zA-Z0-9]+;)/', '&amp;', $replace);
@@ -58,12 +57,7 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 		return $replace;
 	}
 
-	/**
-	 * @param ?string  $subject
-	 *
-	 * @return string
-	 */
-	protected static function ensureUtf8Encoded($subject)
+	protected static function ensureUtf8Encoded(mixed $subject): string
 	{
 		return is_string($subject) || $subject ? Text::toUTF8($subject) : '';
 	}
@@ -71,38 +65,46 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 	/**
 	 * Clone a block.
 	 *
-	 * @param  string  $blockname
-	 * @param  int     $clones                How many time the block should be cloned
-	 * @param  bool    $replace
-	 * @param  bool    $indexVariables        If true, any variables inside the block will be indexed (postfixed with #1, #2, ...)
-	 * @param  array   $variableReplacements  Array containing replacements for macros found inside the block to clone
+	 * @param  string       $blockname
+	 * @param  int          $clones                How many time the block should be cloned
+	 * @param  bool         $replace
+	 * @param  bool         $indexVariables        If true, any variables inside the block will be indexed (postfixed with #1, #2, ...)
+	 * @param  array<int, array<string, mixed>>|null  $variableReplacements  Array containing replacements for macros found inside the block to clone
 	 *
 	 * @return string|null
 	 */
 	public function cloneRecursiveBlocks(
-		$blockname,
-		$clones = 1,
-		$replace = true,
-		$indexVariables = false,
-		$variableReplacements = null
-	) {
-		return $this->cloneRecursiveBlock($blockname,
-			$clones, $replace, $indexVariables, $variableReplacements,
-			$this->tempDocumentMainPart);
+		string $blockname,
+		int $clones = 1,
+		bool $replace = true,
+		bool $indexVariables = false,
+		?array $variableReplacements = null
+	): ?string {
+		return $this->cloneRecursiveBlock(
+			blockname: $blockname,
+			clones: $clones,
+			replace: $replace,
+			indexVariables: $indexVariables,
+			variableReplacements: $variableReplacements,
+			refXmlBlock: $this->tempDocumentMainPart
+		);
 	}
 
 	/** @deprecated Use cloneRecursiveBlocks() */
 	public function cloneRecrusiveBlocks(
-		$blockname,
-		$clones = 1,
-		$replace = true,
-		$indexVariables = false,
-		$variableReplacements = null
-	) {
+		string $blockname,
+		int $clones = 1,
+		bool $replace = true,
+		bool $indexVariables = false,
+		?array $variableReplacements = null
+	): ?string {
 		return $this->cloneRecursiveBlocks($blockname, $clones, $replace, $indexVariables, $variableReplacements);
 	}
 
-	private function collectListRecursive(Collection $collection, $prekey = null): array
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function collectListRecursive(Collection $collection, ?string $prekey = null): array
 	{
 		return $collection->mapWithKeys(function ($value, $key) use ($prekey) {
 			$newkey = $prekey ? $prekey.'.'.$key : $key;
@@ -114,6 +116,10 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 		})->toArray();
 	}
 
+	/**
+	 * @param array<int, mixed> $array
+	 * @return array<int, mixed>
+	 */
 	public function arrayListRecursive(array $array): array
 	{
 		return array_map(function ($x) {
@@ -127,7 +133,7 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 						return [$key => $value];
 					}
 
-					return array_merge([$key => $value], $this->collectListRecursive(collect($value),$key));
+					return array_merge([$key => $value], $this->collectListRecursive(collect($value), $key));
 				})
 				->toArray();
 		}, $array);
@@ -142,22 +148,22 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 	/**
 	 * Clone a block.
 	 *
-	 * @param  string  $blockname
-	 * @param  int     $clones                How many time the block should be cloned
-	 * @param  bool    $replace
-	 * @param  bool    $indexVariables        If true, any variables inside the block will be indexed (postfixed with #1, #2, ...)
-	 * @param  array   $variableReplacements  Array containing replacements for macros found inside the block to clone
+	 * @param  string       $blockname
+	 * @param  int          $clones                How many time the block should be cloned
+	 * @param  bool         $replace
+	 * @param  bool         $indexVariables        If true, any variables inside the block will be indexed (postfixed with #1, #2, ...)
+	 * @param  array<int, array<string, mixed>>|null  $variableReplacements  Array containing replacements for macros found inside the block to clone
 	 *
 	 * @return string|null
 	 */
 	private function cloneRecursiveBlock(
-		$blockname,
-		$clones = 1,
-		$replace = true,
-		$indexVariables = false,
-		$variableReplacements = null,
-		&$refXmlBlock = null
-	) {
+		string $blockname,
+		int $clones = 1,
+		bool $replace = true,
+		bool $indexVariables = false,
+		?array $variableReplacements = null,
+		?string &$refXmlBlock = null
+	): ?string {
 		$xmlBlock = null;
 		$matches = [];
 		preg_match(
@@ -171,39 +177,24 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 			if ($indexVariables) {
 				$cloned = $this->indexClonedVariables($clones, $xmlBlock);
 			} elseif ($variableReplacements !== null && is_array($variableReplacements)) {
-				$variableReplacementsFirst = array_map(function ($x) {
-					return array_filter($x, function ($y) {
-						if(is_array($y)) {
-							if(isset($y[1]) && is_bool($y[1])) {
-								return true;
-							}
-							return false;
-						}
-						return true;
-					});
-					return $x;
-				}, $variableReplacements);
+				$variableReplacementsFirst = $this->filterVariableReplacements($variableReplacements);
 
 				$t = collect($variableReplacementsFirst)->map(fn ($a) => collect($a)->map(function ($x) {
-					if(is_array($x)) {
-						if(is_array($x)) {
-							if(isset($x[1]) && is_bool($x[1])) {
-								return $this->replace(...$x);
-							}
-							return null;
+					if (is_array($x)) {
+						if (isset($x[1]) && is_bool($x[1])) {
+							return $this->replace(...$x);
 						}
-						return array_map(fn($y) => $this->replace($y), $x);
+						return null;
 					}
 					return $this->replace($x);
 				})->toArray())->toArray();
 
 				$cloned = $this->replaceClonedVariables($t, $xmlBlock);
 
-				$variableReplacementsRecrusive = array_map(function ($x) {
-					return array_filter($x, function ($y) {
-						return is_array($y);
-					});
-				}, $variableReplacements);
+				$variableReplacementsRecrusive = array_map(
+					fn ($x) => array_filter($x, fn ($y) => is_array($y)),
+					$variableReplacements
+				);
 
 				foreach ($cloned as $index => $clone) {
 					if (!isset($variableReplacementsRecrusive[$index])) {
@@ -211,15 +202,16 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 					}
 					$clonedBlockVaribles = $variableReplacementsRecrusive[$index];
 					foreach ($clonedBlockVaribles as $block => $variableReplacementsR) {
-						$this->cloneRecursiveBlock($block,
-							$clones,
-							$replace,
-							$indexVariables,
-							$variableReplacementsR,
-							$cloned[$index]);
+						$this->cloneRecursiveBlock(
+							blockname: $block,
+							clones: $clones,
+							replace: $replace,
+							indexVariables: $indexVariables,
+							variableReplacements: $variableReplacementsR,
+							refXmlBlock: $cloned[$index]
+						);
 					}
 				}
-
 			} else {
 				$cloned = [];
 				for ($i = 1; $i <= $clones; $i++) {
@@ -237,5 +229,20 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 		}
 
 		return $xmlBlock;
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $variableReplacements
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function filterVariableReplacements(array $variableReplacements): array
+	{
+		return array_map(
+			fn ($x) => array_filter(
+				$x,
+				fn ($y) => !is_array($y) || (isset($y[1]) && is_bool($y[1]))
+			),
+			$variableReplacements
+		);
 	}
 }
