@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Santwer\Exporter\Helpers;
 
 use DirectoryIterator;
@@ -12,28 +14,39 @@ use Santwer\Exporter\Processor\PDFExporter;
 use Santwer\Exporter\Processor\GlobalVariables;
 use Santwer\Exporter\Exceptions\TempFolderException;
 
-class ExportHelper
+final class ExportHelper
 {
 	protected static int $subBatch = 0;
 	protected static int $subBatchCalls = 0;
+
+	/** @var array<string> */
 	protected static array $garbage = [];
+
+	/** @var array<string> */
 	protected static array $garbageFiles = [];
-	public static function generateRandomString()
+
+	public static function resetBatchCounters(): void
+	{
+		self::$subBatch = 0;
+		self::$subBatchCalls = 0;
+	}
+
+	public static function resetGarbage(): void
+	{
+		self::$garbage = [];
+		self::$garbageFiles = [];
+	}
+
+	public static function generateRandomString(): string
 	{
 		return uniqid();
 	}
 
 	/**
-	 * @param  string       $fileName
-	 * @param  string|null  $writerType
-	 * @return string
 	 * @throws \Exception
 	 */
-	public static function getFormat(
-		string $fileName,
-		string $writerType = null
-	): string {
-
+	public static function getFormat(string $fileName, ?string $writerType = null): string
+	{
 		if ($writerType) {
 			if (!in_array(strtolower($writerType), Writer::formats())) {
 				return Writer::DOCX;
@@ -49,82 +62,85 @@ class ExportHelper
 		return self::getFormat($fileName, $ext);
 	}
 
-	public static function hasSupportedFormats(string $fileName) : bool
+	public static function hasSupportedFormats(string $fileName): bool
 	{
 		$ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 		return in_array($ext, Writer::formats());
 	}
 
-	public static function tempFile(?string $dir = null)
+	public static function tempFile(?string $dir = null): string
 	{
-		if(config('exporter.temp_folder_relative')) {
+		if (config('exporter.temp_folder_relative')) {
 			$filename = 'php_we'.ExportHelper::generateRandomString().'.tmp';
 			if ($dir) {
 				return $dir.DIRECTORY_SEPARATOR.$filename;
 			}
 			return ExportHelper::tempDir().DIRECTORY_SEPARATOR.$filename;
+		}
+		$baseDir = $dir ?? ExportHelper::tempDir();
 
-		}
-		if ($dir) {
-			return tempnam($dir, "php_we");
-		}
-		return tempnam(ExportHelper::tempDir(), "php_we");
+		return self::createUniqueTempFile($baseDir);
 	}
 
-	public static function isPathAbsolute(string $path) : bool
+	/**
+	 * Create an empty temp file in $directory without tempnam() (avoids PHP deprecations
+	 * when the directory lies under the system temp path).
+	 */
+	private static function createUniqueTempFile(string $directory): string
 	{
-		return Str::startsWith($path, ['/', '\\',
-									   'C:', 'D:', 'E:', 'F:', 'G:', 'H:', 'I:', 'J:', 'K:', 'L:', 'M:', 'N:', 'O:', 'P:', 'Q:', 'R:', 'S:',
-									   'T:', 'U:', 'V:', 'W:', 'X:', 'Y:', 'Z:']);
-	}
-	public static function tempDir() : string
-	{
-		//create all folders in path if not exists
-		$path = config('exporter.temp_folder');
-		//explode String with DIRECTORY_SEPARATOR and / or \
-		$pathParts = preg_split('/[\/\\\\]/', $path);
-		$folderPath = '';
-
-		foreach ( $pathParts as $folder) {
-			if (empty($folder)) {
+		for ($i = 0; $i < 50; $i++) {
+			$path = $directory.DIRECTORY_SEPARATOR.'php_we_'.bin2hex(random_bytes(8)).'.tmp';
+			if (file_exists($path)) {
 				continue;
 			}
-			if (Str::contains($folder, ':')) {
-				$folderPath = $folder;
-			} elseif(empty($folderPath)) {
-				$folderPath = $folder;
-			} else {
-				$folderPath = $folderPath.DIRECTORY_SEPARATOR.$folder;
+			if (false !== file_put_contents($path, '')) {
+				return $path;
 			}
+		}
 
-			if (!is_dir($folderPath)) {
-				if (!mkdir($folderPath, 0700)) {
-					throw new TempFolderException('Folder couldn\'t be created');
-				}
+		throw new \RuntimeException('Could not create temp file in '.$directory);
+	}
+
+	public static function isPathAbsolute(string $path): bool
+	{
+		return Str::startsWith($path, [
+			'/', '\\',
+			'C:', 'D:', 'E:', 'F:', 'G:', 'H:', 'I:', 'J:', 'K:', 'L:', 'M:',
+			'N:', 'O:', 'P:', 'Q:', 'R:', 'S:', 'T:', 'U:', 'V:', 'W:', 'X:', 'Y:', 'Z:'
+		]);
+	}
+
+	/**
+	 * @throws TempFolderException
+	 */
+	public static function tempDir(): string
+	{
+		$path = config('exporter.temp_folder');
+		if (!is_dir($path)) {
+			if (!mkdir($path, 0700, true) && !is_dir($path)) {
+				throw new TempFolderException('Folder couldn\'t be created');
 			}
 		}
 
 		return $path;
 	}
 
-	public static function convertForRunningInConsole(string $path) : string
+	public static function convertForRunningInConsole(string $path): string
 	{
 		if (self::isPathAbsolute($path)) {
 			return $path;
 		}
-		if(Str::startsWith($path, '/')) {
+		if (Str::startsWith($path, '/')) {
 			return $path;
 		}
-		if(app()->runningInConsole()) {
+		if (app()->runningInConsole()) {
 			return $path;
 		}
 		return '..'.DIRECTORY_SEPARATOR.$path;
-
 	}
 
 	/**
-	 * @param  string  $prefix
-	 * @return string
+	 * @return array{0: string, 1: string, 2: string}
 	 * @throws TempFolderException
 	 */
 	public static function tempFileName(string $prefix = ''): array
@@ -133,7 +149,7 @@ class ExportHelper
 		//The converter can not handle big chunks, therefore the batch size gets reduced to 200
 		$tempDir = ExportHelper::tempDir();
 		self::$subBatchCalls++;
-		if(self::$subBatchCalls > config('exporter.batch_size', 200)) {
+		if (self::$subBatchCalls > config('exporter.batch_size', 200)) {
 			self::$subBatch++;
 			self::$subBatchCalls = 1;
 		}
@@ -143,29 +159,28 @@ class ExportHelper
 		$newTempDir = $tempDir.DIRECTORY_SEPARATOR.$folderName;
 		$batchNameFolder = $newTempDir.DIRECTORY_SEPARATOR.$batchName;
 		if (!is_dir($newTempDir)) {
-			if (!mkdir($newTempDir, 0700)) {
+			if (!mkdir($newTempDir, 0700, true) && !is_dir($newTempDir)) {
 				throw new TempFolderException('Folder couldn\'t be created');
 			}
 		}
 		if (!is_dir($batchNameFolder)) {
-			if (!mkdir($batchNameFolder, 0700)) {
+			if (!mkdir($batchNameFolder, 0700, true) && !is_dir($batchNameFolder)) {
 				throw new TempFolderException('Folder couldn\'t be created');
 			}
 		}
 
-		return [tempnam($batchNameFolder, "php_we"), $newTempDir, $batchName];
+		return [self::createUniqueTempFile($batchNameFolder), $newTempDir, $batchName];
 	}
 
 	/**
-	 * @param  string  $folder
-	 * @return array
+	 * @return array<string>
 	 * @throws \Exception
 	 */
-	public static function processWordToPdf(string $folder) : array
+	public static function processWordToPdf(string $folder): array
 	{
 		$files = [];
 		foreach (self::getSubDirs($folder) as $dir) {
-			if(is_string($dir)) {
+			if (is_string($dir)) {
 				$files = array_merge($files, self::processWordToPdfFolder($dir));
 			} else {
 				$files = array_merge($files, self::processWordToPdfFolder($folder.DIRECTORY_SEPARATOR.$dir->getFilename()));
@@ -175,45 +190,52 @@ class ExportHelper
 		return $files;
 	}
 
-	public static function processWordToPdfFolder($subfolder)
+	/**
+	 * @return array<string>
+	 */
+	public static function processWordToPdfFolder(string $subfolder): array
 	{
 		PDFExporter::docxToPdf($subfolder.DIRECTORY_SEPARATOR.'*', $subfolder);
-		$subFiles = glob($subfolder .DIRECTORY_SEPARATOR. '*.pdf');
-		if(false !== $subFiles) {
+		$subFiles = glob($subfolder.DIRECTORY_SEPARATOR.'*.pdf');
+		if (false !== $subFiles) {
 			return $subFiles;
 		}
 		return [];
 	}
 
-	public static function getSubDirs(string $folder)
+	/**
+	 * @return \Generator<string>
+	 */
+	public static function getSubDirs(string $folder): \Generator
 	{
 		$dirs = new DirectoryIterator($folder);
 		foreach ($dirs as $dir) {
-			if($dir->isDot()) continue;
+			if ($dir->isDot()) {
+				continue;
+			}
 			if ($dir->isDir()) {
 				$subfolder = $folder.DIRECTORY_SEPARATOR.$dir->getFilename();
 				yield $subfolder;
 			}
 		}
-		return [];
 	}
 
-	public static function garbageCollector(string $folder)
+	public static function garbageCollector(string $folder): void
 	{
 		self::$garbage[] = $folder;
 	}
-	public static function garbageCollectorFiles(string $file)
+
+	public static function garbageCollectorFiles(string $file): void
 	{
 		self::$garbage[] = $file;
 	}
 
-	public static function cleanGarbage()
+	public static function cleanGarbage(): void
 	{
 		foreach (self::$garbage as $folder) {
 			try {
 				//try to delete to save disk space
 				File::deleteDirectory($folder);
-
 			} catch (\Exception $exception) {
 				Log::error($exception->getMessage());
 				//folder could not be deleted, not a throwable error since its temp folder

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Santwer\Exporter\Processor;
 
 use Illuminate\Support\Collection;
@@ -16,16 +18,21 @@ use Santwer\Exporter\Concerns\TokensFromObject;
 use Santwer\Exporter\Concerns\WithWordProcessor;
 use Santwer\Exporter\Concerns\TokensFromCollection;
 use Santwer\Exporter\Exceptions\MissingConcernException;
+use Santwer\Exporter\Services\TemplatePathResolver;
 
-class WordTemplateExporter
+final class WordTemplateExporter
 {
 	protected object $export;
+
+	/** @var array<string> */
 	protected array $concerns = [];
+
+	protected ?TemplatePathResolver $pathResolver = null;
 
 	public function processFile(object $export): Exporter
 	{
 		$this->export = $export;
-		$this->implementsMinumum();
+		$this->implementsMinimum();
 		$file = $this->getFilePath();
 
 		$exporter = new Exporter($file);
@@ -36,27 +43,21 @@ class WordTemplateExporter
 
 	private function getFilePath(): string
 	{
-		$file = $this->export->wordTemplateFile();
-		if (!file_exists($file)) {
-			$file = storage_path($file);
-		}
-		if (!file_exists($file)) {
-			$file = storage_path('app/'.$this->export->wordTemplateFile());
-		}
-
-		return $file;
+		$this->pathResolver ??= new TemplatePathResolver();
+		return $this->pathResolver->resolve($this->export->wordTemplateFile());
 	}
 
 	private function setValues(Exporter $exporter): void
 	{
 		if ($this->hasConcern(TokensFromCollection::class) || $this->hasConcern(TokensFromArray::class)) {
 			$blockNames = $this->export->blockName();
-			if(!is_array($blockNames)) {
+			if (!is_array($blockNames)) {
 				$blockNames = [$blockNames];
 			}
+			$formattedData = $this->formatData();
 			foreach ($blockNames as $blockName) {
-				$data = isset($this->formatData()[$blockName]) ? $this->formatData()[$blockName] : $this->formatData();
-				if($data instanceof Collection) {
+				$data = $formattedData[$blockName] ?? $formattedData;
+				if ($data instanceof Collection) {
 					$data = $data->toArray();
 				}
 				$exporter->setBlockValues($blockName, $data);
@@ -97,7 +98,7 @@ class WordTemplateExporter
 	{
 		if ($this->hasConcern(WithCheckboxes::class)) {
 			foreach ($this->export->checkboxes() as $key => $value) {
-				$exporter->setCheckbox($key, (bool)$value);
+				$exporter->setCheckbox($key, (bool) $value);
 			}
 		}
 	}
@@ -106,7 +107,7 @@ class WordTemplateExporter
 	{
 		if ($this->hasConcern(WithCharts::class)) {
 			foreach ($this->export->charts() as $key => $value) {
-				if(is_callable($value)) {
+				if (is_callable($value)) {
 					$value = $value();
 				}
 				$exporter->setChart($key, $value);
@@ -130,7 +131,10 @@ class WordTemplateExporter
 		}
 	}
 
-	private function formatData()
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function formatData(): array
 	{
 		if ($this->hasConcern(TokensFromCollection::class)) {
 			return $this->export->items()->map(fn ($x) => $this->export->itemTokens($x))->toArray();
@@ -141,7 +145,7 @@ class WordTemplateExporter
 		throw new MissingConcernException();
 	}
 
-	private function implementsMinumum()
+	private function implementsMinimum(): void
 	{
 		$this->concerns = class_implements($this->export);
 		$implementsMissing = array_diff([FromWordTemplate::class], $this->concerns);

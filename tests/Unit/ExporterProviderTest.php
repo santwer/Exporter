@@ -19,4 +19,9 @@ class ExporterProviderTest extends TestCase
         $this->assertNotNull(config('exporter.temp_folder'));
         $this->assertNotNull(config('exporter.batch_size'));
     }
+
+    public function test_boot_registers_commands(): void
+    {
+        $this->assertTrue(class_exists(\Santwer\Exporter\Commands\MakeExportCommand::class));
+    }
 }

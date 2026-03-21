@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Santwer\Exporter\Processor;
 
 use Illuminate\Support\Str;
@@ -10,41 +12,41 @@ use Santwer\Exporter\Helpers\ExportHelper;
 
 class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 {
-	protected $wordfile;
-
+	/** @var array<string, mixed> */
 	protected array $values = [];
 
+	/** @var array<string, array<int, array<string, mixed>>> */
 	protected array $blocks = [];
 
+	/** @var array<string, bool> */
 	protected array $checkboxes = [];
 
+	/** @var array<string, object> */
 	protected array $charts = [];
+
+	/** @var array<string, string|array> */
 	protected array $images = [];
+
+	/** @var array<string, array|callable> */
 	protected array $tables = [];
 
-	/**
-	 * @var TemplateProcessor $templateProcessor
-	 */
-	protected $templateProcessor;
+	protected ?TemplateProcessor $templateProcessor = null;
 
-	/**
-	 * @var Builder $builder
-	 */
-	protected $builder;
+	protected ?Builder $builder = null;
 
-
-	public function __construct(string $wordfile)
-	{
-		$this->wordfile = $wordfile;
-	}
+	public function __construct(
+		protected readonly string $wordfile
+	) {}
 
 	public function setTemplateProcessor(callable $templateProcessor): void
 	{
 		$templateProcessor($this->templateProcessor);
 	}
 
-
-	public function getTemplateVariables()
+	/**
+	 * @return array<string>
+	 */
+	public function getTemplateVariables(): array
 	{
 		return $this->getTemplateProcessor()->getVariables();
 	}
@@ -75,61 +77,54 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 	}
 
 	/**
-	 * @param  array  $values
-	 * @return void
+	 * @param array<string, mixed> $values
 	 */
-	public function setArrayValues(array $values)
+	public function setArrayValues(array $values): void
 	{
 		$this->values = array_merge($this->values, $values);
 	}
 
 	/**
-	 * @param  string  $block
-	 * @param  array   $values
-	 * @return void
+	 * @param array<int, array<string, mixed>> $values
 	 */
-	public function setBlockValues(string $block, array $values)
+	public function setBlockValues(string $block, array $values): void
 	{
 		$this->blocks[$block] = $values;
 	}
 
-	/**
-	 * @param $name
-	 * @param $value
-	 * @return void
-	 */
-	public function setValue($name, $value)
+	public function setValue(string $name, mixed $value): void
 	{
 		$this->values[$name] = $value;
 	}
 
-	public function setCheckbox(string $name, bool $value)
+	public function setCheckbox(string $name, bool $value): void
 	{
 		$this->checkboxes[$name] = $value;
 	}
 
-	public function setChart(string $name,object $value)
+	public function setChart(string $name, object $value): void
 	{
 		$this->charts[$name] = $value;
 	}
-	public function setImage(string $name, $value)
+
+	public function setImage(string $name, string|array $value): void
 	{
 		$this->images[$name] = $value;
 	}
 
-	public function setTables(array $tables)
+	/**
+	 * @param array<string, array|callable> $tables
+	 */
+	public function setTables(array $tables): void
 	{
 		$this->tables = $tables;
 	}
 
-
 	/**
-	 * @param  string|null  $savepath
-	 * @return array|false|string|string[]
 	 * @throws \PhpOffice\PhpWord\Exception\CopyFileException
 	 * @throws \PhpOffice\PhpWord\Exception\CreateTemporaryFileException
 	 */
-	public function getProcessedFile(?string $savepath = null)
+	public function getProcessedFile(?string $savepath = null): string
 	{
 		$templateProcessor = $this->process();
 		$savepath = $savepath ?? $this->getTempFileName();
@@ -139,13 +134,10 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 	}
 
 	/**
-	 * @param  string       $format
-	 * @param  string|null  $savepath
-	 * @return array|false|string|string[]
 	 * @throws \PhpOffice\PhpWord\Exception\CopyFileException
 	 * @throws \PhpOffice\PhpWord\Exception\CreateTemporaryFileException
 	 */
-	public function getProcessedConvertedFile(string $format, ?string $savepath = null)
+	public function getProcessedConvertedFile(string $format, ?string $savepath = null): string
 	{
 		$templateProcessor = $this->process();
 		$savepath = $savepath ?? $this->getTempFileName('docx');
@@ -153,27 +145,23 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 		$templateProcessor->saveAs(
 			ExportHelper::convertForRunningInConsole($savepath)
 		);
-		if ($format === Writer::PDF) {
-			return PDFExporter::docxToPdf($savepath,
-				$savepath ? pathinfo($savepath,
-					PATHINFO_DIRNAME) : null);
-		}
-		if ($format === 'html') {
-			return PDFExporter::html2Pdf($savepath,
-				$savepath ? pathinfo($savepath,
-					PATHINFO_DIRNAME) : null);
-		}
 
-		return ExportHelper::convertForRunningInConsole($savepath);
+		return match ($format) {
+			Writer::PDF, 'pdf' => PDFExporter::docxToPdf(
+				$savepath,
+				$savepath ? pathinfo($savepath, PATHINFO_DIRNAME) : null
+			),
+			'html' => PDFExporter::html2Pdf(
+				$savepath,
+				$savepath ? pathinfo($savepath, PATHINFO_DIRNAME) : null
+			),
+			default => ExportHelper::convertForRunningInConsole($savepath),
+		};
 	}
 
 	public function getTemplateProcessor(): TemplateProcessor
 	{
-		if (null === $this->templateProcessor) {
-			$this->templateProcessor = new TemplateProcessor($this->wordfile);
-		}
-
-		return $this->templateProcessor;
+		return $this->templateProcessor ??= new TemplateProcessor($this->wordfile);
 	}
 
 	/**
@@ -183,6 +171,10 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 	 */
 	public function process(): TemplateProcessor
 	{
+		// Disable PHPWord output escaping to avoid double-escaping
+		// (our TemplateProcessor::replace() handles all XML escaping)
+		\PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(false);
+
 		$templateProcessor = $this->getTemplateProcessor();
 		$values = collect($this->values);
 
@@ -195,9 +187,8 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 			$templateProcessor->setValues($setValues);
 		}
 
-		if ($this->builder) {
-			$this->builder->checkForRelations($templateProcessor->getVariables());
-		}
+		$this->builder?->checkForRelations($templateProcessor->getVariables());
+
 		$this->blocks = $this->addEmptyValues($this->blocks);
 		if (!empty($this->checkboxes)) {
 			foreach ($this->checkboxes as $checkbox => $value) {
@@ -215,68 +206,61 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 			}
 		}
 
-		if(!empty($this->tables)) {
+		if (!empty($this->tables)) {
 			foreach ($this->tables as $table => $tableData) {
 				$templateProcessor->setComplexBlock($table, $this->tableDataToComplexBlock($tableData));
 			}
 		}
 
 		if (!empty($this->blocks)) {
-
 			foreach ($this->blocks as $block => $replacement) {
 				$replacements = collect($replacement)
-					->map(function ($y) {
-						return collect($y)
-							->toArray();
-					})->toArray();
+					->map(fn ($y) => collect($y)->toArray())
+					->toArray();
 
-				$templateProcessor->cloneRecrusiveBlocks($block, 0,
-					true,
-					false, $replacements);
-
+				$templateProcessor->cloneRecursiveBlocks(
+					blockname: $block,
+					clones: 0,
+					replace: true,
+					indexVariables: false,
+					variableReplacements: $replacements
+				);
 			}
 		}
 
 		return $templateProcessor;
 	}
 
-	/**
-	 * transform table data to complex block
-	 * @param $tableData
-	 * @return Table
-	 */
-	private function tableDataToComplexBlock($tableData) : Table
+	private function tableDataToComplexBlock(array|callable $tableData): Table
 	{
-
-		if(is_callable($tableData)) {
+		if (is_callable($tableData)) {
 			$tableData = $tableData();
 		}
-		$style = isset($tableData['style']) ? $tableData['style'] : null;
+		$style = $tableData['style'] ?? null;
 		$table = new Table($style);
 
-		if(isset($tableData['headers'])) {
+		if (isset($tableData['headers'])) {
 			$table->addRow();
 			foreach ($tableData['headers'] as $header) {
-				if(is_array($header)) {
+				if (is_array($header)) {
 					$table->addCell(
-						isset($header['width']) ? $header['width'] : null,
-						isset($header['style']) ? $header['style'] : null
+						$header['width'] ?? null,
+						$header['style'] ?? null
 					)->addText($this->templateProcessor->replace($header['text']));
 				} else {
 					$table->addCell()->addText($this->templateProcessor->replace($header));
 				}
 			}
-
 		}
 
-		if(isset($tableData['rows'])) {
+		if (isset($tableData['rows'])) {
 			foreach ($tableData['rows'] as $row) {
 				$table->addRow();
 				foreach ($row as $column) {
-					if(is_array($column)) {
+					if (is_array($column)) {
 						$table->addCell(
-							isset($column['width']) ? $column['width'] : null,
-							isset($column['style']) ? $column['style'] : null
+							$column['width'] ?? null,
+							$column['style'] ?? null
 						)->addText($this->templateProcessor->replace($column['text']));
 					} else {
 						$table->addCell()->addText($this->templateProcessor->replace($column));
@@ -288,8 +272,11 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 		return $table;
 	}
 
-
-	private function addEmptyValues($blocks)
+	/**
+	 * @param array<string, array<int, array<string, mixed>>> $blocks
+	 * @return array<string, array<int, array<string, mixed>>>
+	 */
+	private function addEmptyValues(array $blocks): array
 	{
 		$variables = $this->getTemplateVariables();
 		foreach ($variables as $variable) {
@@ -297,11 +284,12 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 
 			if (
 				in_array('/'.$sp, $variables)
-				|| Str::contains(':', $variable) || Str::startsWith($variable, '/')) {
+				|| Str::contains(':', $variable) || Str::startsWith($variable, '/')
+			) {
 				continue;
 			} else {
 				foreach ($blocks as $b => $block) {
-					$blocks[$b] = $this->templateProcessor->arrayListRecusive($block);
+					$blocks[$b] = $this->templateProcessor->arrayListRecursive($block);
 					foreach ($block as $e => $entry) {
 						if (isset($entry[$variable])) {
 							continue;
@@ -315,12 +303,7 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 		return $blocks;
 	}
 
-	/**
-	 * @param  string|null  $ext
-	 * @param  bool         $withoutPath
-	 * @return array|false|string|string[]
-	 */
-	public function getTempFileName(string $ext = null, bool $withoutPath = false)
+	public function getTempFileName(?string $ext = null, bool $withoutPath = false): string
 	{
 		if ($withoutPath) {
 			$temp = tempnam('', 'Exp');
@@ -334,5 +317,4 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 
 		return Str::replace('.tmp', '.'.$ext, $temp);
 	}
-
 }

@@ -1,0 +1,6 @@
+# Read the Docs / local: pip install -r docs/requirements.txt
+#
+# MkDocs 2.0 is incompatible with Material for MkDocs today; stay on MkDocs 1.x.
+# See: https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/
+mkdocs>=1.6,<2
+mkdocs-material>=9.7.5

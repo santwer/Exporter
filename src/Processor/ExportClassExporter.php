@@ -24,18 +24,13 @@ class ExportClassExporter
 	}
 
 	/**
-	 * @param  object       $export
-	 * @param  string       $fileName
-	 * @param  string|null  $writerType
-	 * @param  array        $headers
-	 * @return BinaryFileResponse
 	 * @throws \PhpOffice\PhpWord\Exception\CopyFileException
 	 * @throws \PhpOffice\PhpWord\Exception\CreateTemporaryFileException
 	 */
 	public function download(
 		object $export,
 		string $fileName,
-		string $writerType = null,
+		?string $writerType = null,
 		array  $headers = []
 	): BinaryFileResponse {
 		$tmpfname = ExportHelper::tempFile();
@@ -59,22 +54,16 @@ class ExportClassExporter
 	}
 
 	/**
-	 * @param  object       $export
-	 * @param  string       $folderPath
-	 * @param  string|null  $disk
-	 * @param  string|null  $writerType
-	 * @param  array        $diskOptions
-	 * @return false|string
 	 * @throws \PhpOffice\PhpWord\Exception\CopyFileException
 	 * @throws \PhpOffice\PhpWord\Exception\CreateTemporaryFileException
 	 */
 	public function store(
 		object $export,
 		string $folderPath,
-		string $disk = null,
-		string $writerType = null,
+		?string $disk = null,
+		?string $writerType = null,
 		array  $diskOptions = []
-	) {
+	): false|string {
 		if(ExportHelper::hasSupportedFormats($folderPath)) {
 			$fileName = pathinfo($folderPath, PATHINFO_FILENAME)
 				.'.'.pathinfo($folderPath, PATHINFO_EXTENSION);
@@ -107,10 +96,10 @@ class ExportClassExporter
 		object $export,
 		string $filePath,
 		string $name,
-		string $disk = null,
-		string $writerType = null,
+		?string $disk = null,
+		?string $writerType = null,
 		array  $diskOptions = []
-	) {
+	): false|string {
 		$format = ExportHelper::getFormat($name, $writerType);
 		$tmpfname = ExportHelper::tempFile();
 		$file = $this->exporter
@@ -146,10 +135,7 @@ class ExportClassExporter
 		return true;
 	}
 
-	/**
-	 * @param  Exportable  ...$exports
-	 */
-	public function batchQueue(Exportable ...$exports)
+	public function batchQueue(Exportable ...$exports): array
 	{
 		return array_map(fn($x) => $x->dispatch(), $this->batch(...$exports));
 	}

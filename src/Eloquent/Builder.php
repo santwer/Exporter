@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Santwer\Exporter\Eloquent;
 
 use Santwer\Exporter\Traits\ExportDebug;
@@ -17,9 +19,9 @@ use Santwer\Exporter\Traits\ExportOptions;
  */
 class Builder extends EloquentBuilder
 {
-    use ExportOptions, BuilderExportPdf, ExportDebug;
+	use ExportOptions, BuilderExportPdf, ExportDebug;
 
-    protected static $exportdata;
+	protected static mixed $exportdata = null;
 
     /**
      * @param  array|string|null  $name
@@ -32,7 +34,7 @@ class Builder extends EloquentBuilder
     {
         if(is_array($name)) {
             $options = array_merge($name, $options);
-            $name = isset($options['name']) ? $options['name'] : null;
+            $name = $options['name'] ?? null;
         }
         $this->beginnProcess($options);
         if($this::$exportdata === null && !empty($this->getModel()->getAttributes())) {
@@ -63,7 +65,7 @@ class Builder extends EloquentBuilder
     {
         if(is_array($name)) {
             $options = array_merge($name, $options);
-            $name = isset($options['name']) ? $options['name'] : null;
+            $name = $options['name'] ?? null;
         }
         $this->beginnProcess($options);
         $data = collect([$this->first($columns)]);
