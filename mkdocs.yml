@@ -1,5 +1,8 @@
 site_name: Word Template Exporter
 site_description: Laravel package for Word template exports (.docx / .pdf) with placeholders, based on PHPWord.
+# Canonical base URL (sitemap, meta). Use ONE primary host — not both RTD and GitHub Pages at once.
+# Read the Docs: https://santwerexporter.readthedocs.io/
+# GitHub Pages (if that is your main docs URL): https://santwer.github.io/Exporter/
 site_url: https://santwerexporter.readthedocs.io/
 site_author: santwer
 copyright: Copyright &copy; santwer. Documentation licensed under CC BY 4.0.
