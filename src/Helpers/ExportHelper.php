@@ -77,10 +77,28 @@ final class ExportHelper
 			}
 			return ExportHelper::tempDir().DIRECTORY_SEPARATOR.$filename;
 		}
-		if ($dir) {
-			return tempnam($dir, "php_we");
+		$baseDir = $dir ?? ExportHelper::tempDir();
+
+		return self::createUniqueTempFile($baseDir);
+	}
+
+	/**
+	 * Create an empty temp file in $directory without tempnam() (avoids PHP deprecations
+	 * when the directory lies under the system temp path).
+	 */
+	private static function createUniqueTempFile(string $directory): string
+	{
+		for ($i = 0; $i < 50; $i++) {
+			$path = $directory.DIRECTORY_SEPARATOR.'php_we_'.bin2hex(random_bytes(8)).'.tmp';
+			if (file_exists($path)) {
+				continue;
+			}
+			if (false !== file_put_contents($path, '')) {
+				return $path;
+			}
 		}
-		return tempnam(ExportHelper::tempDir(), "php_we");
+
+		throw new \RuntimeException('Could not create temp file in '.$directory);
 	}
 
 	public static function isPathAbsolute(string $path): bool
@@ -97,28 +115,10 @@ final class ExportHelper
 	 */
 	public static function tempDir(): string
 	{
-		//create all folders in path if not exists
 		$path = config('exporter.temp_folder');
-		//explode String with DIRECTORY_SEPARATOR and / or \
-		$pathParts = preg_split('/[\/\\\\]/', $path);
-		$folderPath = '';
-
-		foreach ($pathParts as $folder) {
-			if (empty($folder)) {
-				continue;
-			}
-			if (Str::contains($folder, ':')) {
-				$folderPath = $folder;
-			} elseif (empty($folderPath)) {
-				$folderPath = $folder;
-			} else {
-				$folderPath = $folderPath.DIRECTORY_SEPARATOR.$folder;
-			}
-
-			if (!is_dir($folderPath)) {
-				if (!mkdir($folderPath, 0700)) {
-					throw new TempFolderException('Folder couldn\'t be created');
-				}
+		if (!is_dir($path)) {
+			if (!mkdir($path, 0700, true) && !is_dir($path)) {
+				throw new TempFolderException('Folder couldn\'t be created');
 			}
 		}
 
@@ -159,17 +159,17 @@ final class ExportHelper
 		$newTempDir = $tempDir.DIRECTORY_SEPARATOR.$folderName;
 		$batchNameFolder = $newTempDir.DIRECTORY_SEPARATOR.$batchName;
 		if (!is_dir($newTempDir)) {
-			if (!mkdir($newTempDir, 0700)) {
+			if (!mkdir($newTempDir, 0700, true) && !is_dir($newTempDir)) {
 				throw new TempFolderException('Folder couldn\'t be created');
 			}
 		}
 		if (!is_dir($batchNameFolder)) {
-			if (!mkdir($batchNameFolder, 0700)) {
+			if (!mkdir($batchNameFolder, 0700, true) && !is_dir($batchNameFolder)) {
 				throw new TempFolderException('Folder couldn\'t be created');
 			}
 		}
 
-		return [tempnam($batchNameFolder, "php_we"), $newTempDir, $batchName];
+		return [self::createUniqueTempFile($batchNameFolder), $newTempDir, $batchName];
 	}
 
 	/**
