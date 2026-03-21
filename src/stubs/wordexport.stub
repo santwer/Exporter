@@ -37,4 +37,9 @@ class {{ class }} implements FromWordTemplate, TokensFromCollection, GlobalToken
     {
         return collect();
     }
+
+    public function values(): array
+    {
+        return [];
+    }
 }

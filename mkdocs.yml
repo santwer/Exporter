@@ -10,22 +10,58 @@ edit_uri: edit/master/docs/
 
 docs_dir: docs
 theme:
-  name: readthedocs
-  include_search: true
-  prev_next_buttons_location: bottom
-  sticky_navigation: true
-  navigation_depth: 2
-  collapse_navigation: false
+  name: material
+  language: en
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - toc.follow
 
 plugins:
   - search
 
 markdown_extensions:
   - tables
-  - fenced_code
   - toc:
       permalink: true
-      toc_depth: 2
+      toc_depth: 3
+  - admonition
+  - pymdownx.details
+  # Highlighting: Pygments erkennt php, bash, json, yaml, etc. automatisch — keine Sprachliste nötig.
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: true
+      pygments_lang_class: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
 
 nav:
   - Home: index.md
