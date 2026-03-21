@@ -54,8 +54,9 @@ final class WordTemplateExporter
 			if (!is_array($blockNames)) {
 				$blockNames = [$blockNames];
 			}
+			$formattedData = $this->formatData();
 			foreach ($blockNames as $blockName) {
-				$data = $this->formatData()[$blockName] ?? $this->formatData();
+				$data = $formattedData[$blockName] ?? $formattedData;
 				if ($data instanceof Collection) {
 					$data = $data->toArray();
 				}
