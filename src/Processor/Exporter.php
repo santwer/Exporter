@@ -217,6 +217,12 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 
 		if(!empty($this->tables)) {
 			foreach ($this->tables as $table => $tableData) {
+                if (is_array($tableData) && !isset($tableData['defaultFontStyle'])) {
+                    $inherited = $templateProcessor->getTokenFontStyle($table);
+                    if (!empty($inherited)) {
+                        $tableData['defaultFontStyle'] = $inherited;
+                    }
+                }
 				$templateProcessor->setComplexBlock($table, $this->tableDataToComplexBlock($tableData));
 			}
 		}
@@ -254,6 +260,9 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 		$style = isset($tableData['style']) ? $tableData['style'] : null;
 		$table = new Table($style);
 
+        $defaultFontStyle      = $tableData['defaultFontStyle'] ?? null;
+        $defaultParagraphStyle = $tableData['defaultParagraphStyle'] ?? null;
+
 		if(isset($tableData['headers'])) {
 			$table->addRow();
 			foreach ($tableData['headers'] as $header) {
@@ -261,9 +270,17 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 					$table->addCell(
 						isset($header['width']) ? $header['width'] : null,
 						isset($header['style']) ? $header['style'] : null
-					)->addText($this->templateProcessor->replace($header['text']));
+					)->addText(
+                        $this->templateProcessor->replace($header['text']),
+                        $header['fontStyle'] ?? $defaultFontStyle,
+                        $header['paragraphStyle'] ?? $defaultParagraphStyle
+                    );
 				} else {
-					$table->addCell()->addText($this->templateProcessor->replace($header));
+                    $table->addCell()->addText(
+                        $this->templateProcessor->replace($header),
+                        $defaultFontStyle,
+                        $defaultParagraphStyle
+                    );
 				}
 			}
 
@@ -277,9 +294,17 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 						$table->addCell(
 							isset($column['width']) ? $column['width'] : null,
 							isset($column['style']) ? $column['style'] : null
-						)->addText($this->templateProcessor->replace($column['text']));
+						)->addText(
+                            $this->templateProcessor->replace($column['text']),
+                            $column['fontStyle'] ?? $defaultFontStyle,
+                            $column['paragraphStyle'] ?? $defaultParagraphStyle
+                        );
 					} else {
-						$table->addCell()->addText($this->templateProcessor->replace($column));
+						$table->addCell()->addText(
+                            $this->templateProcessor->replace($column),
+                            $defaultFontStyle,
+                            $defaultParagraphStyle
+                        );
 					}
 				}
 			}

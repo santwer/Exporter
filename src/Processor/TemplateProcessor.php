@@ -47,6 +47,85 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 		return is_string($subject) || $subject ? Text::toUTF8($subject) : '';
 	}
 
+    /**
+     * Clone a block.
+     *
+     * @param  string  $blockname
+     * @param  int     $clones                How many time the block should be cloned
+     * @param  bool    $replace
+     * @param  bool    $indexVariables        If true, any variables inside the block will be indexed (postfixed with #1, #2, ...)
+     * @param  array   $variableReplacements  Array containing replacements for macros found inside the block to clone
+     *
+     * @return string|null
+     */
+    public function getTokenFontStyle(string $search): array
+    {
+        $macro        = static::ensureMacroCompleted($search);
+        $escapedMacro = preg_quote($macro, '/');
+
+        preg_match(
+            '/<w:p(?:\s[^>]*)?>(?:(?!<w:p(?:\s[^>]*)?>).)*?' . $escapedMacro . '.*?<\/w:p>/s',
+            $this->tempDocumentMainPart,
+            $paragraphMatches
+        );
+
+        if (empty($paragraphMatches[0])) {
+            return [];
+        }
+
+        $paragraph = $paragraphMatches[0];
+
+        // Prefer run-level rPr from the run that contains the token
+        preg_match(
+            '/<w:r(?:\s[^>]*)?>(?:(?!<w:r(?:\s[^>]*)?>).)*?' . $escapedMacro . '.*?<\/w:r>/s',
+            $paragraph,
+            $runMatches
+        );
+
+        $rPr = '';
+        if (!empty($runMatches[0])) {
+            preg_match('/<w:rPr>(.*?)<\/w:rPr>/s', $runMatches[0], $rPrMatches);
+            $rPr = $rPrMatches[1] ?? '';
+        }
+
+        // Fall back to paragraph mark rPr
+        if (empty($rPr)) {
+            preg_match('/<w:pPr>.*?<w:rPr>(.*?)<\/w:rPr>.*?<\/w:pPr>/s', $paragraph, $pPrMatches);
+            $rPr = $pPrMatches[1] ?? '';
+        }
+
+        return $this->parseRPrToFontStyle($rPr);
+    }
+
+    private function parseRPrToFontStyle(string $rPr): array
+    {
+        $style = [];
+
+        if (preg_match('/<w:rFonts[^>]*\bw:ascii="([^"]+)"/', $rPr, $m)) {
+            $style['name'] = $m[1];
+        }
+
+        if (preg_match('/<w:sz\s+w:val="(\d+)"/', $rPr, $m)) {
+            $style['size'] = (int) $m[1] / 2;
+        }
+
+        if (preg_match('/<w:b(?:\s+w:val="([^"]*)")?(?:\s*\/)?>/s', $rPr, $m)
+            && ($m[1] ?? '1') !== '0' && ($m[1] ?? '1') !== 'false') {
+            $style['bold'] = true;
+        }
+
+        if (preg_match('/<w:i(?:\s+w:val="([^"]*)")?(?:\s*\/)?>/s', $rPr, $m)
+            && ($m[1] ?? '1') !== '0' && ($m[1] ?? '1') !== 'false') {
+            $style['italic'] = true;
+        }
+
+        if (preg_match('/<w:color\s+w:val="([^"]+)"/', $rPr, $m) && $m[1] !== 'auto') {
+            $style['color'] = $m[1];
+        }
+
+        return $style;
+    }
+
 	/**
 	 * Clone a block.
 	 *
