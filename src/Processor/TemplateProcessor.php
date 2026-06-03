@@ -48,53 +48,32 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 	}
 
     /**
-     * Clone a block.
+     * get Token Style
      *
-     * @param  string  $blockname
-     * @param  int     $clones                How many time the block should be cloned
-     * @param  bool    $replace
-     * @param  bool    $indexVariables        If true, any variables inside the block will be indexed (postfixed with #1, #2, ...)
-     * @param  array   $variableReplacements  Array containing replacements for macros found inside the block to clone
+     * @param  string  $search
      *
-     * @return string|null
+     * @return array
      */
     public function getTokenFontStyle(string $search): array
     {
-        $macro        = static::ensureMacroCompleted($search);
-        $escapedMacro = preg_quote($macro, '/');
-
-        preg_match(
-            '/<w:p(?:\s[^>]*)?>(?:(?!<w:p(?:\s[^>]*)?>).)*?' . $escapedMacro . '.*?<\/w:p>/s',
-            $this->tempDocumentMainPart,
-            $paragraphMatches
-        );
-
-        if (empty($paragraphMatches[0])) {
-            return [];
+        $macro = static::ensureMacroCompleted($search);
+        $runWhere = $this->findContainingXmlBlockForMacro($macro, 'w:r');
+        if (is_array($runWhere)) {
+            $runXml = $this->getSlice($runWhere['start'], $runWhere['end']);
+            preg_match('/<w:rPr>(.*?)<\/w:rPr>/s', $runXml, $m);
+            if (!empty($m[1])) {
+                return $this->parseRPrToFontStyle($m[1]);
+            }
         }
-
-        $paragraph = $paragraphMatches[0];
-
-        // Prefer run-level rPr from the run that contains the token
-        preg_match(
-            '/<w:r(?:\s[^>]*)?>(?:(?!<w:r(?:\s[^>]*)?>).)*?' . $escapedMacro . '.*?<\/w:r>/s',
-            $paragraph,
-            $runMatches
-        );
-
-        $rPr = '';
-        if (!empty($runMatches[0])) {
-            preg_match('/<w:rPr>(.*?)<\/w:rPr>/s', $runMatches[0], $rPrMatches);
-            $rPr = $rPrMatches[1] ?? '';
+        $paraWhere = $this->findContainingXmlBlockForMacro($macro, 'w:p');
+        if (is_array($paraWhere)) {
+            $paraXml = $this->getSlice($paraWhere['start'], $paraWhere['end']);
+            preg_match('/<w:pPr>.*?<w:rPr>(.*?)<\/w:rPr>.*?<\/w:pPr>/s', $paraXml, $m);
+            if (!empty($m[1])) {
+                return $this->parseRPrToFontStyle($m[1]);
+            }
         }
-
-        // Fall back to paragraph mark rPr
-        if (empty($rPr)) {
-            preg_match('/<w:pPr>.*?<w:rPr>(.*?)<\/w:rPr>.*?<\/w:pPr>/s', $paragraph, $pPrMatches);
-            $rPr = $pPrMatches[1] ?? '';
-        }
-
-        return $this->parseRPrToFontStyle($rPr);
+        return [];
     }
 
     private function parseRPrToFontStyle(string $rPr): array
