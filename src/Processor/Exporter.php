@@ -261,9 +261,9 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 					$table->addCell(
 						isset($header['width']) ? $header['width'] : null,
 						isset($header['style']) ? $header['style'] : null
-					)->addText($this->templateProcessor->replace($header['text']));
+                    )->addText($this->templateProcessor->replace($header['text']));
 				} else {
-					$table->addCell()->addText($this->templateProcessor->replace($header));
+                    $table->addCell()->addText($this->templateProcessor->replace($header));
 				}
 			}
 
@@ -277,9 +277,9 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 						$table->addCell(
 							isset($column['width']) ? $column['width'] : null,
 							isset($column['style']) ? $column['style'] : null
-						)->addText($this->templateProcessor->replace($column['text']));
+                        )->addText($this->templateProcessor->replace($column['text']));
 					} else {
-						$table->addCell()->addText($this->templateProcessor->replace($column));
+                        $table->addCell()->addText($this->templateProcessor->replace($column));
 					}
 				}
 			}

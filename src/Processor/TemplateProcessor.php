@@ -47,6 +47,64 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 		return is_string($subject) || $subject ? Text::toUTF8($subject) : '';
 	}
 
+    /**
+     * get Token Style
+     *
+     * @param  string  $search
+     *
+     * @return array
+     */
+    public function getTokenFontStyle(string $search): array
+    {
+        $macro = static::ensureMacroCompleted($search);
+        $runWhere = $this->findContainingXmlBlockForMacro($macro, 'w:r');
+        if (is_array($runWhere)) {
+            $runXml = $this->getSlice($runWhere['start'], $runWhere['end']);
+            preg_match('/<w:rPr>(.*?)<\/w:rPr>/s', $runXml, $m);
+            if (!empty($m[1])) {
+                return $this->parseRPrToFontStyle($m[1]);
+            }
+        }
+        $paraWhere = $this->findContainingXmlBlockForMacro($macro, 'w:p');
+        if (is_array($paraWhere)) {
+            $paraXml = $this->getSlice($paraWhere['start'], $paraWhere['end']);
+            preg_match('/<w:pPr>.*?<w:rPr>(.*?)<\/w:rPr>.*?<\/w:pPr>/s', $paraXml, $m);
+            if (!empty($m[1])) {
+                return $this->parseRPrToFontStyle($m[1]);
+            }
+        }
+        return [];
+    }
+
+    private function parseRPrToFontStyle(string $rPr): array
+    {
+        $style = [];
+
+        if (preg_match('/<w:rFonts[^>]*\bw:ascii="([^"]+)"/', $rPr, $m)) {
+            $style['name'] = $m[1];
+        }
+
+        if (preg_match('/<w:sz\s+w:val="(\d+)"/', $rPr, $m)) {
+            $style['size'] = (int) $m[1] / 2;
+        }
+
+        if (preg_match('/<w:b(?:\s+w:val="([^"]*)")?(?:\s*\/)?>/s', $rPr, $m)
+            && ($m[1] ?? '1') !== '0' && ($m[1] ?? '1') !== 'false') {
+            $style['bold'] = true;
+        }
+
+        if (preg_match('/<w:i(?:\s+w:val="([^"]*)")?(?:\s*\/)?>/s', $rPr, $m)
+            && ($m[1] ?? '1') !== '0' && ($m[1] ?? '1') !== 'false') {
+            $style['italic'] = true;
+        }
+
+        if (preg_match('/<w:color\s+w:val="([^"]+)"/', $rPr, $m) && $m[1] !== 'auto') {
+            $style['color'] = $m[1];
+        }
+
+        return $style;
+    }
+
 	/**
 	 * Clone a block.
 	 *
