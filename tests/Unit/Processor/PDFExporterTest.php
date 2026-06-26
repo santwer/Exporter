@@ -4,6 +4,7 @@ namespace Santwer\Exporter\Tests\Unit\Processor;
 
 use Mockery;
 use Santwer\Exporter\Exceptions\PDFConversionException;
+use Santwer\Exporter\Helpers\ExportHelper;
 use Santwer\Exporter\Processor\PDFExporter;
 use Santwer\Exporter\Tests\TestCase;
 use Symfony\Component\Process\Process;
@@ -43,8 +44,6 @@ class PDFExporterTest extends TestCase
 
 	private function sofOfficeAvailable(): bool
 	{
-		$process = new Process(['soffice', '--version']);
-		$process->run();
-		return $process->isSuccessful();
+		return ExportHelper::sofficeIsAvailable();
 	}
 }

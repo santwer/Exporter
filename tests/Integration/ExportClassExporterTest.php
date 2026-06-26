@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Storage;
 use Santwer\Exporter\Concerns\FromWordTemplate;
 use Santwer\Exporter\Concerns\GlobalTokens;
 use Santwer\Exporter\Exportables\Exportable;
+use Santwer\Exporter\Helpers\ExportHelper;
 use Santwer\Exporter\Processor\ExportClassExporter;
 use Santwer\Exporter\Processor\WordTemplateExporter;
 use Santwer\Exporter\Tests\TestCase;
@@ -113,9 +114,7 @@ class ExportClassExporterTest extends TestCase
 
     private function hasSoffice(): bool
     {
-        $process = new \Symfony\Component\Process\Process(['soffice', '--version']);
-        $process->run();
-        return $process->isSuccessful();
+        return ExportHelper::sofficeIsAvailable();
     }
 }
 

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Santwer\Exporter\Processor\PDFExporter;
 use Santwer\Exporter\Processor\GlobalVariables;
 use Santwer\Exporter\Exceptions\TempFolderException;
+use Symfony\Component\Process\Process;
 
 final class ExportHelper
 {
@@ -241,5 +242,107 @@ final class ExportHelper
 				//folder could not be deleted, not a throwable error since its temp folder
 			}
 		}
+	}
+
+	public static function sofficeIsAvailable(): bool
+	{
+		return self::resolveSofficeBinary() !== null;
+	}
+
+	public static function sofficeBinary(): string
+	{
+		$binary = self::resolveSofficeBinary();
+
+		if ($binary !== null) {
+			return $binary;
+		}
+
+		$prefix = rtrim((string) config('exporter.word2pdf.soffice_prefix', ''), '\\/');
+
+		if ($prefix === '') {
+			return PHP_OS_FAMILY === 'Windows' ? 'soffice.exe' : 'soffice';
+		}
+
+		$prefix = self::normalizeBinaryPath($prefix).DIRECTORY_SEPARATOR;
+
+		return $prefix.(PHP_OS_FAMILY === 'Windows' ? 'soffice.exe' : 'soffice');
+	}
+
+	public static function resolveSofficeBinary(): ?string
+	{
+		static $resolved = false;
+		static $binary = null;
+
+		if ($resolved) {
+			return $binary;
+		}
+
+		$resolved = true;
+		$prefix = rtrim((string) config('exporter.word2pdf.soffice_prefix', ''), '\\/');
+		$prefix = $prefix === '' ? '' : self::normalizeBinaryPath($prefix).DIRECTORY_SEPARATOR;
+
+		/** @var list<string> $candidates */
+		$candidates = [
+			$prefix.(PHP_OS_FAMILY === 'Windows' ? 'soffice.exe' : 'soffice'),
+			$prefix.'soffice',
+			...(PHP_OS_FAMILY === 'Windows' ? ['soffice.exe', 'soffice'] : ['soffice']),
+		];
+
+		if (PHP_OS_FAMILY === 'Windows') {
+			$candidates[] = 'C:\\Program Files\\LibreOffice\\program\\soffice.exe';
+			$candidates[] = 'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe';
+		}
+
+		foreach (array_unique($candidates) as $candidate) {
+			$candidate = self::normalizeBinaryPath($candidate);
+
+			if (self::sofficeResponds($candidate)) {
+				return $binary = $candidate;
+			}
+		}
+
+		return null;
+	}
+
+	private static function normalizeBinaryPath(string $path): string
+	{
+		if (in_array($path, ['soffice', 'soffice.exe'], true)) {
+			return $path;
+		}
+
+		if (PHP_OS_FAMILY === 'Windows') {
+			return str_replace('/', '\\', $path);
+		}
+
+		return $path;
+	}
+
+	private static function sofficeResponds(string $binary): bool
+	{
+		$binary = self::normalizeBinaryPath($binary);
+
+		if (! in_array($binary, ['soffice', 'soffice.exe'], true)) {
+			if (! is_file($binary)) {
+				return false;
+			}
+
+			// Absolute paths: file existence is enough (--version can hang on Windows).
+			if (str_contains($binary, '/') || str_contains($binary, '\\')) {
+				return true;
+			}
+		}
+
+		$process = new Process([
+			$binary,
+			'--headless',
+			'--norestore',
+			'--nologo',
+			'--nofirststartwizard',
+			'--version',
+		]);
+		$process->setTimeout(5);
+		$process->run();
+
+		return $process->isSuccessful();
 	}
 }
