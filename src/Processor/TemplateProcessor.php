@@ -63,6 +63,63 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 	}
 
 	/**
+	 * @return array<string, mixed>
+	 */
+	public function getTokenFontStyle(string $search): array
+	{
+		$macro = static::ensureMacroCompleted($search);
+		$runWhere = $this->findContainingXmlBlockForMacro($macro, 'w:r');
+		if (is_array($runWhere)) {
+			$runXml = $this->getSlice($runWhere['start'], $runWhere['end']);
+			if (preg_match('/<w:rPr>(.*?)<\/w:rPr>/s', $runXml, $matches) && ! empty($matches[1])) {
+				return $this->parseRPrToFontStyle($matches[1]);
+			}
+		}
+
+		$paraWhere = $this->findContainingXmlBlockForMacro($macro, 'w:p');
+		if (is_array($paraWhere)) {
+			$paraXml = $this->getSlice($paraWhere['start'], $paraWhere['end']);
+			if (preg_match('/<w:pPr>.*?<w:rPr>(.*?)<\/w:rPr>.*?<\/w:pPr>/s', $paraXml, $matches) && ! empty($matches[1])) {
+				return $this->parseRPrToFontStyle($matches[1]);
+			}
+		}
+
+		return [];
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function parseRPrToFontStyle(string $rPr): array
+	{
+		$style = [];
+
+		if (preg_match('/<w:rFonts[^>]*\bw:ascii="([^"]+)"/', $rPr, $matches)) {
+			$style['name'] = $matches[1];
+		}
+
+		if (preg_match('/<w:sz\s+w:val="(\d+)"/', $rPr, $matches)) {
+			$style['size'] = (int) $matches[1] / 2;
+		}
+
+		if (preg_match('/<w:b(?:\s+w:val="([^"]*)")?(?:\s*\/)?>/s', $rPr, $matches)
+			&& ($matches[1] ?? '1') !== '0' && ($matches[1] ?? '1') !== 'false') {
+			$style['bold'] = true;
+		}
+
+		if (preg_match('/<w:i(?:\s+w:val="([^"]*)")?(?:\s*\/)?>/s', $rPr, $matches)
+			&& ($matches[1] ?? '1') !== '0' && ($matches[1] ?? '1') !== 'false') {
+			$style['italic'] = true;
+		}
+
+		if (preg_match('/<w:color\s+w:val="([^"]+)"/', $rPr, $matches) && $matches[1] !== 'auto') {
+			$style['color'] = $matches[1];
+		}
+
+		return $style;
+	}
+
+	/**
 	 * Clone a block.
 	 *
 	 * @param  string       $blockname

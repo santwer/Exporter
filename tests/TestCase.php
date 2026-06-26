@@ -42,4 +42,17 @@ abstract class TestCase extends Orchestra
 
         return $path;
     }
+
+    protected function createStyledPlaceholderDocx(
+        string $placeholder = '${table1}',
+        array $fontStyle = ['bold' => true, 'name' => 'Arial', 'size' => 14]
+    ): string {
+        $phpWord = new PhpWord();
+        $section = $phpWord->addSection();
+        $section->addText($placeholder, $fontStyle);
+        $path = sys_get_temp_dir().'/exporter-styled-'.uniqid().'.docx';
+        $phpWord->save($path, 'Word2007');
+
+        return $path;
+    }
 }

@@ -20,6 +20,20 @@ Each value must be an array (or a closure returning one) with:
 - **headers**: Array of header cells. Each cell can be a string or `['width' => int, 'text' => string]`. For PDF export, set column widths on headers so columns render correctly.
 - **rows**: Array of rows; each row is an array of cell values (strings or `['width' => int, 'text' => string]`).
 - **style** (optional): Array with `borderSize`, `borderColor`, `width`, etc.
+- **defaultFontStyle** (optional): Default font style for all cells. If omitted, the package tries to inherit the font style from the `${placeholder}` in the Word template.
+- **defaultParagraphStyle** (optional): Default paragraph style for all cells.
+- Per-cell overrides: use `fontStyle` or `paragraphStyle` on header/cell arrays; these take precedence over `defaultFontStyle`.
+
+## Font style inheritance
+
+When the table placeholder in your Word template has a custom font (name, size, bold, italic, color), table cells inherit that style automatically unless you set `defaultFontStyle` explicitly in the table data.
+
+| Scenario | Result |
+|----------|--------|
+| Token has font style, no cell override | Cells inherit token style |
+| Token has font style, cell has `fontStyle` | Cell style wins |
+| `defaultFontStyle` set in table data | Explicit value is kept, no lookup |
+| Token has no detectable style | No extra style applied |
 
 ## Example
 

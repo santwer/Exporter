@@ -155,4 +155,26 @@ class TemplateProcessorTest extends TestCase
 		]);
 		$this->assertIsArray($result);
 	}
+
+	public function test_get_token_font_style_reads_run_style(): void
+	{
+		$docPath = $this->createStyledPlaceholderDocx('${invoiceItems}', [
+			'bold' => true,
+			'name' => 'Arial',
+			'size' => 14,
+		]);
+		$processor = new TemplateProcessor($docPath);
+		$style = $processor->getTokenFontStyle('invoiceItems');
+
+		$this->assertTrue($style['bold'] ?? false);
+		$this->assertSame('Arial', $style['name'] ?? null);
+		$this->assertSame(14, $style['size'] ?? null);
+	}
+
+	public function test_get_token_font_style_returns_empty_for_unstyled_token(): void
+	{
+		$docPath = $this->createMinimalDocx('${plain}');
+		$processor = new TemplateProcessor($docPath);
+		$this->assertSame([], $processor->getTokenFontStyle('plain'));
+	}
 }

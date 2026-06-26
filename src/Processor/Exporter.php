@@ -6,6 +6,7 @@ namespace Santwer\Exporter\Processor;
 
 use Illuminate\Support\Str;
 use Santwer\Exporter\Writer;
+use PhpOffice\PhpWord\Element\Cell;
 use PhpOffice\PhpWord\Element\Table;
 use Santwer\Exporter\Eloquent\Builder;
 use Santwer\Exporter\Helpers\ExportHelper;
@@ -208,6 +209,15 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 
 		if (!empty($this->tables)) {
 			foreach ($this->tables as $table => $tableData) {
+				if (is_callable($tableData)) {
+					$tableData = $tableData();
+				}
+				if (! isset($tableData['defaultFontStyle'])) {
+					$inherited = $templateProcessor->getTokenFontStyle($table);
+					if (! empty($inherited)) {
+						$tableData['defaultFontStyle'] = $inherited;
+					}
+				}
 				$templateProcessor->setComplexBlock($table, $this->tableDataToComplexBlock($tableData));
 			}
 		}
@@ -231,24 +241,30 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 		return $templateProcessor;
 	}
 
-	private function tableDataToComplexBlock(array|callable $tableData): Table
+	private function tableDataToComplexBlock(array $tableData): Table
 	{
-		if (is_callable($tableData)) {
-			$tableData = $tableData();
-		}
 		$style = $tableData['style'] ?? null;
 		$table = new Table($style);
+		$defaultFontStyle = $tableData['defaultFontStyle'] ?? null;
+		$defaultParagraphStyle = $tableData['defaultParagraphStyle'] ?? null;
 
 		if (isset($tableData['headers'])) {
 			$table->addRow();
 			foreach ($tableData['headers'] as $header) {
 				if (is_array($header)) {
-					$table->addCell(
-						$header['width'] ?? null,
-						$header['style'] ?? null
-					)->addText($this->templateProcessor->replace($header['text']));
+					$this->addTableCellText(
+						$table->addCell($header['width'] ?? null, $header['style'] ?? null),
+						$header['text'],
+						$header['fontStyle'] ?? $defaultFontStyle,
+						$header['paragraphStyle'] ?? $defaultParagraphStyle
+					);
 				} else {
-					$table->addCell()->addText($this->templateProcessor->replace($header));
+					$this->addTableCellText(
+						$table->addCell(),
+						$header,
+						$defaultFontStyle,
+						$defaultParagraphStyle
+					);
 				}
 			}
 		}
@@ -258,18 +274,38 @@ class Exporter implements \Santwer\Exporter\Interfaces\ExporterInterface
 				$table->addRow();
 				foreach ($row as $column) {
 					if (is_array($column)) {
-						$table->addCell(
-							$column['width'] ?? null,
-							$column['style'] ?? null
-						)->addText($this->templateProcessor->replace($column['text']));
+						$this->addTableCellText(
+							$table->addCell($column['width'] ?? null, $column['style'] ?? null),
+							$column['text'],
+							$column['fontStyle'] ?? $defaultFontStyle,
+							$column['paragraphStyle'] ?? $defaultParagraphStyle
+						);
 					} else {
-						$table->addCell()->addText($this->templateProcessor->replace($column));
+						$this->addTableCellText(
+							$table->addCell(),
+							$column,
+							$defaultFontStyle,
+							$defaultParagraphStyle
+						);
 					}
 				}
 			}
 		}
 
 		return $table;
+	}
+
+	private function addTableCellText(
+		Cell $cell,
+		mixed $value,
+		?array $fontStyle,
+		?array $paragraphStyle
+	): void {
+		$cell->addText(
+			$this->templateProcessor->replace($value),
+			$fontStyle,
+			$paragraphStyle
+		);
 	}
 
 	/**

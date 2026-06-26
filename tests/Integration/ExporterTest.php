@@ -141,5 +141,83 @@ class ExporterTest extends TestCase
         $proc2 = $exporter->getTemplateProcessor();
         $this->assertSame($proc1, $proc2);
     }
+
+    public function test_table_inherits_font_style_from_placeholder_token(): void
+    {
+        $templatePath = $this->createStyledPlaceholderDocx('${table1}', [
+            'bold' => true,
+            'name' => 'Arial',
+            'size' => 12,
+        ]);
+        $exporter = new Exporter($templatePath);
+        $exporter->setTables([
+            'table1' => [
+                'headers' => [['width' => 2000, 'text' => 'Name']],
+                'rows' => [['Cell']],
+            ],
+        ]);
+
+        $path = $exporter->getProcessedFile();
+        $zip = new \ZipArchive();
+        $zip->open($path);
+        $xml = $zip->getFromName('word/document.xml');
+        $zip->close();
+
+        $this->assertIsString($xml);
+        $this->assertStringContainsString('<w:b', $xml);
+        $this->assertStringContainsString('w:ascii="Arial"', $xml);
+    }
+
+    public function test_explicit_default_font_style_skips_token_lookup(): void
+    {
+        $templatePath = $this->createStyledPlaceholderDocx('${table1}', [
+            'bold' => true,
+            'name' => 'Arial',
+            'size' => 12,
+        ]);
+        $exporter = new Exporter($templatePath);
+        $exporter->setTables([
+            'table1' => [
+                'defaultFontStyle' => ['italic' => true, 'name' => 'Times New Roman'],
+                'rows' => [['Cell']],
+            ],
+        ]);
+
+        $path = $exporter->getProcessedFile();
+        $zip = new \ZipArchive();
+        $zip->open($path);
+        $xml = $zip->getFromName('word/document.xml');
+        $zip->close();
+
+        $this->assertIsString($xml);
+        $this->assertStringContainsString('<w:i', $xml);
+        $this->assertStringContainsString('w:ascii="Times New Roman"', $xml);
+    }
+
+    public function test_per_cell_font_style_overrides_default(): void
+    {
+        $templatePath = $this->createStyledPlaceholderDocx('${table1}', [
+            'bold' => true,
+            'name' => 'Arial',
+        ]);
+        $exporter = new Exporter($templatePath);
+        $exporter->setTables([
+            'table1' => [
+                'rows' => [[
+                    ['text' => 'Custom', 'fontStyle' => ['italic' => true, 'name' => 'Courier New']],
+                ]],
+            ],
+        ]);
+
+        $path = $exporter->getProcessedFile();
+        $zip = new \ZipArchive();
+        $zip->open($path);
+        $xml = $zip->getFromName('word/document.xml');
+        $zip->close();
+
+        $this->assertIsString($xml);
+        $this->assertStringContainsString('<w:i', $xml);
+        $this->assertStringContainsString('w:ascii="Courier New"', $xml);
+    }
 }
 
