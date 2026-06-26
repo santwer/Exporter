@@ -165,3 +165,4 @@ All conversions happen before XML escaping is applied.
 3. **Never trust user input** - Always use automatic escaping (no allowTags) for user-generated content
 4. **Test with special characters** - Include `&`, `<`, `>`, `"`, `'` in your test data
 5. **UTF-8 everywhere** - Ensure your database and Laravel app use UTF-8 encoding
+6. **Debug PDF failures** - If LibreOffice rejects a DOCX, check [PDF Troubleshooting](pdf-troubleshooting.md) for automatic XML analysis and log output

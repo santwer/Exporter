@@ -54,7 +54,7 @@ PDFExporter::docxToPdf() (LibreOffice soffice)
 1. **Export class** (or model) provides the template path and all data (tokens, blocks, charts, images, tables, checkboxes).
 2. **WordTemplateExporter** (or ModelProcessor) resolves the template file path, creates an **Exporter** instance with that path, and fills it from the export/model.
 3. **Exporter** holds the template path and data; when output is requested it runs **process()**, which uses **TemplateProcessor** (PHPWord) to replace placeholders and write the `.docx`.
-4. For PDF, **PDFExporter** converts the `.docx` to `.pdf` via LibreOffice.
+4. For PDF, **PDFExporter** converts the `.docx` to `.pdf` via LibreOffice. If conversion fails, the package analyses the DOCX XML and throws `PDFConversionException` — see [PDF Troubleshooting](pdf-troubleshooting.md).
 
 ### Package Structure
 

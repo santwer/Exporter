@@ -30,3 +30,5 @@ Config file: `config/exporter.php`.
 
 - **`soffice_prefix`**: Prefix for the `soffice` command (e.g. full path on Windows). Set `SOFFICE_PATH` in `.env` if `soffice` is not on `PATH`.
 - **`command`**: Full command template; `?` placeholders are replaced with output directory and input file. Override with `SOFFICE_COMMAND_PATH` if needed.
+
+Use `ExportHelper::sofficeIsAvailable()` to check whether PDF export is possible. When conversion fails, see [PDF Troubleshooting](pdf-troubleshooting.md) for `PDFConversionException`, log output, and DOCX XML analysis.

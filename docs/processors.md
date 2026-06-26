@@ -26,6 +26,8 @@ Central handler that holds the template file and collected values, blocks, chart
 
 Handles conversion of Word or HTML to PDF via LibreOffice's `soffice` command. Key methods: `docxToPdf($docX, $path = null)`, `html2Pdf(string $html, ?string $path = null)`. Uses `config('exporter.word2pdf')` for command and prefix.
 
+On failure, throws `PDFConversionException` and analyses the generated DOCX for invalid XML. See [PDF Troubleshooting](pdf-troubleshooting.md) for logging, exception details, and debugging.
+
 ## BatchProcessor
 
 Trait used for processing multiple exports (e.g. batch store). Manages temp files and PDF conversion for batches. Key methods: `preProcess()`, `subProcess()`, `whenDone()` / `whenPDFDone()` for callbacks.

@@ -15,7 +15,7 @@ Laravel package for exporting Word templates with placeholders as `.docx` or `.p
 composer require santwer/exporter
 ```
 
-For PDF export, LibreOffice must be installed. See the full documentation.
+For PDF export, LibreOffice must be installed. If conversion fails, the package logs DOCX XML analysis via `PDFConversionException` — see [PDF Troubleshooting](docs/pdf-troubleshooting.md) in the docs.
 
 ## Full documentation
 
