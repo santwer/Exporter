@@ -54,26 +54,22 @@ final class PDFExporter
 	{
 		$outDir = $path ?? pathinfo($docX, PATHINFO_DIRNAME);
 
-		$command = [
-			ExportHelper::sofficeBinary(),
-			'--convert-to',
-			'pdf',
-			'--outdir',
-			$outDir,
-			$docX,
-			'--headless',
-		];
+		$template = (string) config(
+			'exporter.word2pdf.command',
+			'soffice --convert-to pdf --outdir ? ? --headless'
+		);
 
-		$process = new Process($command);
-		$process->setTimeout(120);
-		$process->run();
 
-		if (!$process->isSuccessful()) {
-			throw PDFConversionException::fromDocxConversion(
-				$docX,
-				$process->getOutput(),
-				$process->getErrorOutput()
-			);
+		$command = Str::replaceArray('?', [
+			escapeshellarg($outDir),
+			escapeshellarg($docX),
+		], $template);
+
+		exec($command, $outputLines, $exitCode);
+
+		if ($exitCode !== 0) {
+			throw PDFConversionException::fromDocxConversion($docX, implode("\n",
+				$outputLines), '');
 		}
 
 		$fileext = pathinfo($docX, PATHINFO_EXTENSION);
