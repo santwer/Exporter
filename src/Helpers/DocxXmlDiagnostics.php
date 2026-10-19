@@ -99,6 +99,16 @@ final class DocxXmlDiagnostics
 	}
 
 	/**
+	 * Analyses a single XML part that is not (yet) written to a DOCX file.
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	public static function analyzeXml(string $part, string $xml): array
+	{
+		return self::deduplicateFindings(self::analyzePart($part, $xml));
+	}
+
+	/**
 	 * @return list<array<string, mixed>>
 	 */
 	private static function analyzePart(string $part, string $xml): array

@@ -14,7 +14,7 @@ Used for Eloquent models with the Exportable trait (deprecated path). Checks for
 
 Extends PHPWord's template processor. Handles placeholder replacement and recursive block cloning (loops). Key methods: `setValue()`, `replace()`, `cloneRecrusiveBlocks()`, `arrayListRecusive()`. Used by `Exporter` to fill the Word document.
 
-**XML Escaping:** The `replace()` method automatically escapes all text values for XML safety: `&`, `<`, `>`, `"`, `'` → XML entities. With `allowTags` parameter, only `&`, `"`, `'` are escaped while `<` and `>` are preserved. Supports UTF-8 and prevents double-escaping. See [XML Escaping & Security](xml-escaping.md).
+**XML Escaping:** The `replace()` method automatically escapes all text values for XML safety: `&`, `<`, `>`, `"`, `'` → XML entities. With `allowTags` parameter, `<` and `>` are preserved (tags incl. their attributes stay intact), `&` is escaped and `"`, `'` are escaped only in the text between tags. Supports UTF-8 and prevents double-escaping. See [XML Escaping & Security](xml-escaping.md).
 
 ## Exporter
 

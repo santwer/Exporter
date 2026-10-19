@@ -7,6 +7,7 @@ namespace Santwer\Exporter\Processor;
 use Illuminate\Support\Str;
 use PhpOffice\PhpWord\Shared\Text;
 use Illuminate\Support\Collection;
+use Santwer\Exporter\Helpers\DocxXmlDiagnostics;
 
 class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 {
@@ -17,6 +18,58 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 		bool $allowTags = false
 	): void {
 		parent::setValue($search, $this->replace($replace, $allowTags), $limit);
+	}
+
+	/**
+	 * Logs a warning before saving when a processed part is no longer valid XML
+	 * (Word refuses to open such a file).
+	 */
+	public function save()
+	{
+		$this->warnAboutInvalidXml();
+
+		return parent::save();
+	}
+
+	/**
+	 * @return list<array<string, mixed>>
+	 */
+	public function findXmlErrors(): array
+	{
+		$parts = [$this->getMainPartName() => $this->tempDocumentMainPart];
+		foreach ($this->tempDocumentHeaders as $index => $xml) {
+			$parts[$this->getHeaderName($index)] = $xml;
+		}
+		foreach ($this->tempDocumentFooters as $index => $xml) {
+			$parts[$this->getFooterName($index)] = $xml;
+		}
+
+		$errors = [];
+		foreach ($parts as $part => $xml) {
+			foreach (DocxXmlDiagnostics::analyzeXml($part, (string) $xml) as $finding) {
+				if ($finding['type'] === 'parse_error') {
+					$errors[] = $finding;
+				}
+			}
+		}
+
+		return $errors;
+	}
+
+	private function warnAboutInvalidXml(): void
+	{
+		if (! function_exists('app') || ! app()->bound('log') || ! config('exporter.validate_xml', true)) {
+			return;
+		}
+
+		$errors = $this->findXmlErrors();
+		if ($errors !== []) {
+			logger()->warning(
+				"Word export produced invalid XML, Word may not be able to open the file.\n"
+				.DocxXmlDiagnostics::formatReport($errors),
+				['findings' => $errors]
+			);
+		}
 	}
 
 	public function replace(mixed $replace, bool $allowTags = false): string
@@ -49,9 +102,14 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 			} else {
 				$replace = preg_replace('/&(?![a-zA-Z0-9]+;)/', '&amp;', $replace);
 			}
-			// Escape quotes
-			$replace = str_replace('"', '&quot;', $replace);
-			$replace = str_replace("'", '&#039;', $replace);
+			// Escape quotes in text only, tags keep their attribute quotes (e.g. <w:br w:type="page"/>)
+			$replace = preg_replace_callback(
+				'/(<[^<>]*>)|([^<]+)/',
+				fn (array $match) => ($match[1] ?? '') !== ''
+					? $match[1]
+					: str_replace(['"', "'"], ['&quot;', '&#039;'], $match[2]),
+				$replace
+			);
 		}
 
 		return $replace;
@@ -222,15 +280,19 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 		?string &$refXmlBlock = null
 	): ?string {
 		$xmlBlock = null;
-		$matches = [];
-		preg_match(
-			'/(.*((?s)<w:p\b(?:(?!<w:p\b).)*?\${'.$blockname.'}<\/w:.*?p>))(.*)((?s)<w:p\b(?:(?!<w:p\b).)[^$]*?\${\/'.$blockname.'}<\/w:.*?p>)/is',
-			$refXmlBlock,
-			$matches
-		);
+		$openMarker = '${'.$blockname.'}';
+		$closeMarker = '${/'.$blockname.'}';
 
-		if (isset($matches[3])) {
-			$xmlBlock = $matches[3];
+		// last opening marker and the last closing marker after it
+		$openPos = strrpos((string) $refXmlBlock, $openMarker);
+		$closePos = $openPos === false
+			? false
+			: strrpos((string) $refXmlBlock, $closeMarker, $openPos + strlen($openMarker));
+		$openParagraph = $openPos === false ? null : $this->findEnclosingParagraph((string) $refXmlBlock, $openPos);
+		$closeParagraph = $closePos === false ? null : $this->findEnclosingParagraph((string) $refXmlBlock, $closePos);
+
+		if ($openParagraph !== null && $closeParagraph !== null && $openParagraph['end'] <= $closeParagraph['start']) {
+			$xmlBlock = substr($refXmlBlock, $openParagraph['end'], $closeParagraph['start'] - $openParagraph['end']);
 			if ($indexVariables) {
 				$cloned = $this->indexClonedVariables($clones, $xmlBlock);
 			} elseif ($variableReplacements !== null && is_array($variableReplacements)) {
@@ -277,15 +339,82 @@ class TemplateProcessor extends \PhpOffice\PhpWord\TemplateProcessor
 			}
 
 			if ($replace) {
-				$refXmlBlock = str_replace(
-					$matches[2].$matches[3].$matches[4],
-					implode('', $cloned),
-					$refXmlBlock
-				);
+				$openXml = substr($refXmlBlock, $openParagraph['start'], $openParagraph['end'] - $openParagraph['start']);
+				$closeXml = substr($refXmlBlock, $closeParagraph['start'], $closeParagraph['end'] - $closeParagraph['start']);
+
+				$refXmlBlock = substr($refXmlBlock, 0, $openParagraph['start'])
+					.$this->removeMarkerParagraph($openXml, $openMarker)
+					.implode('', $cloned)
+					.$this->removeMarkerParagraph($closeXml, $closeMarker)
+					.substr($refXmlBlock, $closeParagraph['end']);
 			}
 		}
 
 		return $xmlBlock;
+	}
+
+	/**
+	 * Finds the innermost <w:p> that contains $pos. Nested paragraphs (e.g. inside text boxes)
+	 * are taken into account, so the block never ends inside a drawing.
+	 *
+	 * @return array{start: int, end: int}|null
+	 */
+	private function findEnclosingParagraph(string $xml, int $pos): ?array
+	{
+		preg_match_all('/<(\/?)w:p(?:\s[^>]*)?>/', $xml, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+
+		$tags = [];
+		foreach ($matches as $match) {
+			if (Str::endsWith($match[0][0], '/>')) {
+				continue;
+			}
+			$tags[] = ['offset' => $match[0][1], 'length' => strlen($match[0][0]), 'close' => $match[1][0] === '/'];
+		}
+
+		$start = null;
+		$depth = 0;
+		for ($i = count($tags) - 1; $i >= 0; $i--) {
+			if ($tags[$i]['offset'] >= $pos) {
+				continue;
+			}
+			if ($tags[$i]['close']) {
+				$depth++;
+			} elseif ($depth === 0) {
+				$start = $i;
+				break;
+			} else {
+				$depth--;
+			}
+		}
+
+		if ($start === null) {
+			return null;
+		}
+
+		$depth = 0;
+		for ($i = $start, $count = count($tags); $i < $count; $i++) {
+			$depth += $tags[$i]['close'] ? -1 : 1;
+			if ($depth === 0) {
+				$end = $tags[$i]['offset'] + $tags[$i]['length'];
+
+				return $end > $pos ? ['start' => $tags[$start]['offset'], 'end' => $end] : null;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Removes a block marker paragraph. Paragraphs that also anchor a drawing
+	 * (shapes, text boxes, images) are kept and only lose the marker text.
+	 */
+	private function removeMarkerParagraph(string $paragraph, string $marker): string
+	{
+		if (Str::contains($paragraph, ['<w:drawing', '<mc:AlternateContent', '<w:pict', '<w:object'])) {
+			return Str::replaceFirst($marker, '', $paragraph);
+		}
+
+		return '';
 	}
 
 	/**

@@ -18,6 +18,14 @@ Typical causes:
 
 See also [XML Escaping & Security](xml-escaping.md) for how escaping works and how to avoid broken XML.
 
+## Parallel conversions
+
+LibreOffice allows only one running instance per user profile. If a second `soffice` process starts with the same profile, it hands its job to the running instance and exits immediately, often with exit code 0, before the PDF exists. With several PHP-FPM or queue workers, PDFs can then go missing or be incomplete.
+
+The package therefore starts every conversion with its own temporary profile (`-env:UserInstallation=file:///…/lo_profile_<random>`) and deletes it afterwards (config `exporter.word2pdf.isolate_instances`, enabled by default). After the conversion, the package checks that each expected PDF exists and is not empty. Otherwise it throws `PDFConversionException` with `Expected PDF was not created: …`.
+
+If your application calls `soffice` directly, outside of this package, add a unique `-env:UserInstallation` there as well, or use `PDFExporter::docxToPdf()` / `PDFExporter::docxFilesToPdf()`.
+
 ## Exception: `PDFConversionException`
 
 Thrown when `PDFExporter::docxToPdf()` or `PDFExporter::html2Pdf()` fails.
@@ -173,6 +181,8 @@ SOFFICE_PATH="C:/Program Files/LibreOffice/program"
 | Log shows `unescaped ampersand` | Raw `&` in value | Same — use normal export path; escaping is automatic. |
 | `No obvious XML issues` + empty LibreOffice error | Wrong/missing `SOFFICE_PATH` | Set path in `.env`; see [Installation](installation.md). |
 | PDF works in CLI but not in web request | Different env / permissions | Ensure PHP-FPM/web user can run `soffice` and write to the temp folder. |
+| PDFs missing or incomplete under load | Several `soffice` processes sharing one user profile | Keep `isolate_instances` enabled; see [Parallel conversions](#parallel-conversions). |
+| Generated DOCX cannot be opened in Word (missing namespace) | Block markers in a paragraph that anchors a shape (fixed: such paragraphs are kept) | Update the package; check the log for `Word export produced invalid XML`. |
 
 ## Related classes
 

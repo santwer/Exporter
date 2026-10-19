@@ -30,7 +30,7 @@ The package ensures proper UTF-8 encoding for all text values. International cha
 
 ## AllowTags Mode
 
-In some cases, you may want to include formatted text (bold, italic, etc.) in your placeholders. Use the `allowTags` parameter to preserve HTML/XML tags while still escaping quotes and ampersands.
+In some cases, you may want to include formatted text (bold, italic, etc.) in your placeholders. Use the `allowTags` parameter to preserve HTML/XML tags while still escaping ampersands and the quotes in the text.
 
 ### Using AllowTags in setValue()
 
@@ -40,8 +40,9 @@ $processor->setValue('formatted', '<w:b>Bold</w:b> text', allowTags: true);
 ```
 
 When `allowTags` is enabled:
-- `<` and `>` are **preserved** (tags remain intact)
-- `&`, `"`, `'` are **still escaped** (for XML attribute safety)
+- `<` and `>` are **preserved** (tags remain intact, including their attributes, e.g. `<w:br w:type="page"/>`)
+- `&` is **still escaped** unless it already starts an entity (`&amp;`, `&#039;`, …)
+- `"` and `'` are escaped **only in the text between tags**; quotes inside a tag are kept, so attributes stay valid
 
 ### Using AllowTags in Blocks
 

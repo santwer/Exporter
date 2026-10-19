@@ -2,6 +2,7 @@
 
 namespace Santwer\Exporter\Tests\Unit\Processor;
 
+use Illuminate\Support\Facades\Log;
 use Santwer\Exporter\Processor\TemplateProcessor;
 use Santwer\Exporter\Tests\TestCase;
 
@@ -72,12 +73,27 @@ class TemplateProcessorTest extends TestCase
 		$docPath = $this->createMinimalDocx();
 		$processor = new TemplateProcessor($docPath);
 		$result = $processor->replace('<p class="test">Text\'s "value"</p>', true);
-		// Tags should be preserved
-		$this->assertStringContainsString('<p', $result);
-		$this->assertStringContainsString('</p>', $result);
-		// Quotes should be escaped (allowTags uses &#039; for single quotes)
-		$this->assertStringContainsString('&quot;', $result);
-		$this->assertStringContainsString('&#039;', $result);
+		// Tags keep their attribute quotes, quotes in text are escaped (&#039; for single quotes)
+		$this->assertSame('<p class="test">Text&#039;s &quot;value&quot;</p>', $result);
+	}
+
+	public function test_replace_keeps_attribute_quotes_with_allow_tags(): void
+	{
+		$processor = new TemplateProcessor($this->createMinimalDocx());
+
+		$this->assertSame(
+			'<w:br w:type="page"/><w:t xml:space=\'preserve\'>A &amp; B</w:t>',
+			$processor->replace('<w:br w:type="page"/><w:t xml:space=\'preserve\'>A & B</w:t>', true)
+		);
+	}
+
+	public function test_set_value_with_allow_tags_and_attributes_keeps_document_valid(): void
+	{
+		$processor = new TemplateProcessor($this->createMinimalDocx('${umbruch}'));
+		// closes the placeholder's w:t, adds a page break, opens a new w:t
+		$processor->setValue('umbruch', '</w:t><w:br w:type="page"/><w:t xml:space="preserve">', allowTags: true);
+
+		$this->assertSame([], $processor->findXmlErrors());
 	}
 
 	public function test_replace_preserves_utf8_characters(): void
@@ -169,6 +185,41 @@ class TemplateProcessorTest extends TestCase
 		$this->assertTrue($style['bold'] ?? false);
 		$this->assertSame('Arial', $style['name'] ?? null);
 		$this->assertSame(14, $style['size'] ?? null);
+	}
+
+	public function test_save_logs_warning_for_undeclared_namespace(): void
+	{
+		$processor = new TemplateProcessor($this->createMinimalDocx('${test}'));
+		$processor->setValue('test', '<a:xfrm/>', allowTags: true);
+
+		$errors = $processor->findXmlErrors();
+		$this->assertNotEmpty($errors);
+		$this->assertStringContainsString('Namespace prefix a', $errors[0]['message']);
+
+		Log::shouldReceive('warning')->once()->withArgs(
+			fn (string $message) => str_contains($message, 'invalid XML')
+		);
+		$processor->saveAs(sys_get_temp_dir().'/exporter-invalid-'.uniqid().'.docx');
+	}
+
+	public function test_save_skips_xml_check_when_disabled(): void
+	{
+		config()->set('exporter.validate_xml', false);
+		$processor = new TemplateProcessor($this->createMinimalDocx('${test}'));
+		$processor->setValue('test', '<a:xfrm/>', allowTags: true);
+
+		Log::shouldReceive('warning')->never();
+		$processor->saveAs(sys_get_temp_dir().'/exporter-unchecked-'.uniqid().'.docx');
+	}
+
+	public function test_save_does_not_log_for_valid_document(): void
+	{
+		$processor = new TemplateProcessor($this->createMinimalDocx('${test}'));
+		$processor->setValue('test', 'Wert');
+
+		$this->assertSame([], $processor->findXmlErrors());
+		Log::shouldReceive('warning')->never();
+		$processor->saveAs(sys_get_temp_dir().'/exporter-valid-'.uniqid().'.docx');
 	}
 
 	public function test_get_token_font_style_returns_empty_for_unstyled_token(): void

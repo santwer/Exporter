@@ -196,12 +196,27 @@ final class ExportHelper
 	 */
 	public static function processWordToPdfFolder(string $subfolder): array
 	{
-		PDFExporter::docxToPdf($subfolder.DIRECTORY_SEPARATOR.'*', $subfolder);
-		$subFiles = glob($subfolder.DIRECTORY_SEPARATOR.'*.pdf');
-		if (false !== $subFiles) {
-			return $subFiles;
-		}
-		return [];
+		$documents = array_values(array_filter(
+			glob($subfolder.DIRECTORY_SEPARATOR.'*') ?: [],
+			fn (string $file) => is_file($file) && strtolower(pathinfo($file, PATHINFO_EXTENSION)) !== 'pdf'
+		));
+
+		return PDFExporter::docxFilesToPdf($documents, $subfolder);
+	}
+
+	/**
+	 * Converts a local path into a file:// URI as expected by LibreOffice's -env:UserInstallation.
+	 */
+	public static function pathToFileUri(string $path): string
+	{
+		$segments = explode('/', str_replace('\\', '/', $path));
+		$segments = array_map(
+			fn (string $segment) => preg_match('/^[A-Za-z]:$/', $segment) ? $segment : rawurlencode($segment),
+			$segments
+		);
+		$uri = implode('/', $segments);
+
+		return 'file://'.(Str::startsWith($uri, '/') ? '' : '/').$uri;
 	}
 
 	/**
